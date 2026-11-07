@@ -19,10 +19,13 @@ export function parseGeocodes(
   });
   for (const row of records) {
     if (!ids.includes(row[0])) continue;
-    const coordinates = row[5]?.split(",").map(Number);
+    const coordinates = row[5]
+      ?.split(",")
+      .map((value) => (value.trim() ? Number(value) : NaN));
     if (
       row[2] === "Match" &&
-      row[3] === "Exact" &&
+      // Census can label valid fractional addresses and added directionals Non_Exact.
+      (row[3] === "Exact" || row[3] === "Non_Exact") &&
       coordinates?.length === 2 &&
       coordinates.every(Number.isFinite) &&
       Math.abs(coordinates[0]) <= 180 &&
@@ -37,7 +40,7 @@ export function parseGeocodes(
         error:
           row[2] === "Tie"
             ? "Census returned multiple possible addresses"
-            : `Census could not find an exact address match for "${row[1]}"`,
+            : `Census could not find an address match with valid coordinates for "${row[1]}"`,
       });
   }
   for (const id of ids)

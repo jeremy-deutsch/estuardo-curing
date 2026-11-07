@@ -97,23 +97,82 @@ test("empty, malformed and unsupported uploads fail before database writes", () 
     /csv or .xlsx/,
   );
 });
-test("Census response coordinates use longitude then latitude; ties and omissions fail", () => {
+test("Census accepts exact and non-exact matches; ties and omissions fail", () => {
   const rows =
     '"a","input","Match","Exact","matched","-118.2,34.1","1","L"\n"b","input","Tie"\n"c","input","No_Match"\n"d","input","Match","Non_Exact","matched","-118.2,34.1"';
   const result = parseGeocodes(rows, ["a", "b", "c", "d", "missing"]);
   assert.deepEqual(result.get("a"), { longitude: -118.2, latitude: 34.1 });
+  assert.deepEqual(result.get("d"), { longitude: -118.2, latitude: 34.1 });
   assert.match((result.get("b") as { error: string }).error, /multiple/);
-  for (const id of ["c", "d", "missing"]) assert.ok("error" in result.get(id)!);
+  for (const id of ["c", "missing"]) assert.ok("error" in result.get(id)!);
 });
 test("malformed coordinates are never saved as successful matches", () => {
-  for (const point of ["NaN,34", "181,34", "-118,91", ""]) {
-    assert.ok(
-      "error" in
-        parseGeocodes(`"a","input","Match","Exact","matched","${point}"`, [
-          "a",
-        ]).get("a")!,
-    );
+  for (const quality of ["Exact", "Non_Exact"]) {
+    for (const point of ["NaN,34", "181,34", "-118,91", "", ",34", "-118, "]) {
+      assert.ok(
+        "error" in
+          parseGeocodes(
+            `"a","input","Match","${quality}","matched","${point}"`,
+            ["a"],
+          ).get("a")!,
+      );
+    }
   }
+});
+
+test("fractional house numbers and Census-added directionals geocode without changing voter addresses", async (t) => {
+  const streets = [
+    "5207 3/4 S Hoover St",
+    "551 1/2 W 45Th St",
+    "5230 Long Beach Ave",
+  ];
+  const records = streets.map((street, index) => ({
+    id: String(index),
+    record: {
+      ...person,
+      street,
+      city: "Los Angeles",
+      state: "CA",
+      zip: index === 2 ? "90058" : "90037",
+    },
+  }));
+  const original = structuredClone(records);
+  t.mock.method(
+    globalThis,
+    "fetch",
+    async (_url: unknown, options?: RequestInit) => {
+      const csv = await (
+        (options?.body as FormData).get("addressFile") as File
+      ).text();
+      assert.equal(
+        csv,
+        records
+          .map(
+            ({ id, record }) =>
+              `"${id}","${record.street}","Los Angeles","CA","${record.zip}"`,
+          )
+          .join("\n"),
+      );
+      // Response fields captured from Census for the reported failing addresses.
+      return new Response(
+        [
+          '"0","5207 3/4 S Hoover St, Los Angeles, CA, 90037","Match","Non_Exact","5207 3/4 S HOOVER ST, LOS ANGELES, CA, 90037","-118.287186455197,33.995097513338","141659238","R"',
+          '"1","551 1/2 W 45Th St, Los Angeles, CA, 90037","Match","Non_Exact","551 1/2 W 45TH ST, LOS ANGELES, CA, 90037","-118.283461824507,34.002818534643","141607885","R"',
+          '"2","5230 Long Beach Ave, Los Angeles, CA, 90058","Match","Non_Exact","5230 E LONG BEACH AVE, LOS ANGELES, CA, 90058","-118.243092246047,33.995240611889","141671526","L"',
+        ].join("\n"),
+      );
+    },
+  );
+  const result = await geocode(records);
+  assert.deepEqual(
+    [...result.values()],
+    [
+      { longitude: -118.287186455197, latitude: 33.995097513338 },
+      { longitude: -118.283461824507, latitude: 34.002818534643 },
+      { longitude: -118.243092246047, latitude: 33.995240611889 },
+    ],
+  );
+  assert.deepEqual(records, original);
 });
 test("Census submission contains addresses only and uses a multipart batch request", async (t) => {
   const mocked = t.mock.method(
