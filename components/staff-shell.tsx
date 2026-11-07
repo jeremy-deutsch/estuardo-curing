@@ -9,9 +9,11 @@ import { Icon } from "./icon";
 import { logoutAction } from "@/app/actions/auth";
 export function StaffShell({
   email,
+  superAdmin = false,
   children,
 }: {
   email: string;
+  superAdmin?: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -50,13 +52,22 @@ export function StaffShell({
             </Link>
           ))}
         </nav>
+        {superAdmin && (
+          <Link
+            href="/staff"
+            className={`${styles.navItem} ${pathname.startsWith("/staff") ? styles.active : ""}`}
+          >
+            <Icon name="voters" />
+            Staff management
+          </Link>
+        )}
         <div className={styles.sidebarBottom}>
           <div className={styles.staffAccount}>
             <span className={styles.accountAvatar}>
               {email[0]?.toUpperCase() || "S"}
             </span>
             <div>
-              <strong>Campaign staff</strong>
+              <strong>{superAdmin ? "Super-admin" : "Campaign staff"}</strong>
               <small title={email}>{email}</small>
             </div>
             <form
@@ -90,11 +101,13 @@ export function StaffShell({
             <span className={styles.breadcrumb}>Workspace</span>
             <span className={styles.slash}>/</span>
             <span>
-              {pathname.startsWith("/uploads")
-                ? "Uploads"
-                : pathname.startsWith("/batches")
-                  ? "Batches"
-                  : "Voters"}
+              {pathname.startsWith("/staff")
+                ? "Staff management"
+                : pathname.startsWith("/uploads")
+                  ? "Uploads"
+                  : pathname.startsWith("/batches")
+                    ? "Batches"
+                    : "Voters"}
             </span>
           </div>
           <span className={ui.staffBadge}>

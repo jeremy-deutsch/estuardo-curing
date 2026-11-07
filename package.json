@@ -9,6 +9,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
+    "test:staff": "vitest run --config vitest.staff.config.ts",
     "test:db": "node scripts/test-database.mjs",
     "test:smoke": "node scripts/smoke.mjs",
     "format": "prettier --write app components lib scripts tests proxy.ts next.config.ts README.md",

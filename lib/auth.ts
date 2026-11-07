@@ -11,13 +11,17 @@ export class HttpError extends Error {
     super(message);
   }
 }
-export const staffSession = cache(async () => {
+export const accountSession = cache(async () => {
   const db = await serverClient();
   const {
     data: { user },
     error,
   } = await db.auth.getUser();
   if (error || !user) throw new HttpError("Please sign in to continue.", 401);
+  return { db, user };
+});
+export const staffSession = cache(async () => {
+  const { db, user } = await accountSession();
   const { data: member, error: membershipError } = await db
     .from("staff_members")
     .select("user_id")
@@ -30,7 +34,7 @@ export const staffSession = cache(async () => {
     );
   if (!member)
     throw new HttpError(
-      "This account has not been granted staff access. Contact your administrator.",
+      "Your account is awaiting approval by the campaign administrator.",
       403,
     );
   return { db, user };
@@ -42,6 +46,8 @@ export async function staffPageSession() {
   } catch (error) {
     unstable_rethrow(error);
     if (error instanceof HttpError && error.status === 401) redirect("/login");
+    if (error instanceof HttpError && error.status === 403)
+      redirect("/pending-approval");
     throw error;
   }
 }

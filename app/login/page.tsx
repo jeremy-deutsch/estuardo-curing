@@ -1,6 +1,9 @@
 import ui from "../../components/shared.module.css";
 import styles from "./login.module.css";
 import { LoginForm } from "./login-form";
+import Link from "next/link";
+import { Suspense } from "react";
+import { ConfirmationNotice } from "./confirmation-notice";
 export default function Login() {
   return (
     <main className={styles.loginPage}>
@@ -29,11 +32,14 @@ export default function Login() {
             CAMPAIGN STAFF
           </span>
           <h2>Sign in</h2>
+          <Suspense>
+            <ConfirmationNotice />
+          </Suspense>
           <LoginForm />
           <div className={styles.loginHelp}>
-            Need access? Ask your campaign administrator
+            Need an account? <Link href="/signup">Create an account</Link>.
             <br />
-            to create your staff account.
+            New accounts need administrator approval.
           </div>
         </div>
         <p className={styles.loginPanelFooter}>

@@ -17,7 +17,7 @@ The one retained HTTP endpoint is `/api/imports/[id]`: GET reads job progress an
 1. Install dependencies with `pnpm install` (Node 22+).
 2. Copy `.env.example` to `.env`, or retain your existing `.env`. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from your Supabase project. A legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY` is also supported.
 3. Apply `supabase/migrations/202611070001_ballot_operations.sql` in the **Supabase SQL editor**, or set `POSTGRES_SESSION_POOLER_URL` (or `POSTGRES_URL`) and run `pnpm db:migrate`. This first migration creates new tables; it intentionally refuses to overwrite existing application tables. `pnpm db:check` checks whether the schema is installed.
-4. Create staff users in **Supabase → Authentication → Users**, with an email and password. Add their user IDs to the staff allowlist using the SQL editor:
+4. Create your initial administrator account in **Supabase → Authentication → Users**, with an email and password. Add its user ID to the staff allowlist using the SQL editor:
 
    ```sql
    insert into public.staff_members (user_id)
@@ -26,11 +26,31 @@ The one retained HTTP endpoint is `/api/imports/[id]`: GET reads job progress an
 
 5. Run `pnpm dev` and open `http://localhost:3000`. `/` opens the protected voter workspace; signed-out visitors are sent to `/login`.
 
-If `db.YOUR_PROJECT.supabase.co` does not resolve or your network cannot reach an IPv6-only direct database endpoint, copy the **Session pooler** connection string from Supabase's Connect dialog into `POSTGRES_SESSION_POOLER_URL`. The SQL editor also works without a local database connection. Never put database passwords or Supabase secret/service-role keys in `NEXT_PUBLIC_*` variables. The application itself uses the publishable key and authenticated sessions; it does not need a service-role key.
+If `db.YOUR_PROJECT.supabase.co` does not resolve or your network cannot reach an IPv6-only direct database endpoint, copy the **Session pooler** connection string from Supabase's Connect dialog into `POSTGRES_SESSION_POOLER_URL`. The SQL editor also works without a local database connection. Never put database passwords or Supabase secret/service-role keys in `NEXT_PUBLIC_*` variables. Normal staff and public workflows use the publishable key and authenticated sessions. Staff management additionally uses a server-only secret key.
+
+## Signup and staff approval
+
+Configure these environment variables on the server (and restart the app):
+
+- `SUPER_ADMIN_USER_ID`: the exact Authentication user UUID of your initial administrator. This user must also belong to `staff_members`. With this unset, nobody has super-admin access. Staff cannot change this setting or promote themselves.
+- `SUPABASE_SECRET_KEY`: the Supabase project's secret key (a legacy service-role key also works). This privileged client is used only after the super-admin authorization check to list accounts and grant staff membership. Signup uses the public key.
+
+In **Supabase → Authentication**, enable new user signups and the Email provider. Under **URL Configuration**, set **Site URL** to the app's root URL, such as `https://YOUR_APP_DOMAIN` or `http://localhost:3000` for local testing. Keep the default **Confirm signup** email template. No email template changes or app `SITE_URL` environment variable are required.
+
+Anyone can register at `/signup` with an email and password of at least 12 characters. Signup never inserts a `staff_members` row. With email confirmation enabled, Supabase sends its standard confirmation email. The app accepts the PKCE code at the root Site URL and exchanges it at `/auth/callback`, then opens `/pending-approval`. Open the link in the same browser used for signup; if the session cannot be established, users can sign in with their password after confirming their email. With email confirmation disabled, signup goes straight to `/pending-approval`. See [Supabase signup behavior](https://supabase.com/docs/reference/javascript/auth-signup).
+
+If email confirmation is enabled, the project's email delivery settings must support your registrants. Supabase's default mail service restricts recipients and has tight rate limits; see [SMTP setup](https://supabase.com/docs/guides/auth/auth-smtp). The app does not send invitation or approval emails.
+
+Sign in as the configured administrator and open **Staff management** (`/staff`). All accounts without staff membership appear under **Awaiting approval**. Click **Approve as staff** to insert their account ID into `staff_members`; existing staff appear separately. The listing reads every page of Auth users. Email confirmation status is shown independently, and approval does not bypass Supabase's email confirmation requirement.
+
+Unapproved accounts stay signed in on `/pending-approval` and cannot access staff pages, data, or mutations. After approval, **Check approval status** or a new login opens the voter workspace. Approval is idempotent and does not change passwords or account metadata. Revoke access by deleting the account's `staff_members` row in the SQL editor; the account then appears as unapproved again. No schema migration is required.
 
 ## Staff workflow
 
-- **`/login`**: email/password authentication. Both a verified Supabase session and explicit `staff_members` membership are required. There is no public staff signup. Revoke membership by deleting its allowlist row.
+- **`/staff`**: super-admin only account list and staff approval. Access requires both staff membership and the configured `SUPER_ADMIN_USER_ID`. Use `pnpm test:staff` for signup, approval authorization, account pagination, and callback tests.
+- **`/signup`**: public account registration; staff access requires separate administrator approval.
+- **`/pending-approval`**: signed-in accounts awaiting staff access. Refresh the approval status to enter the app after approval.
+- **`/login`**: email/password authentication. Approved users enter the workspace; unapproved users see their pending status. Staff access always requires both a verified Supabase session and explicit `staff_members` membership.
 - **`/uploads`**: CSV and XLSX uploads, reports, failed-row downloads, and resumable processing. Limits: 5 MB and 10,000 data rows per file. XLSX reads the first worksheet. The supplied CSV and Excel exports each contain 122 supported rows. Report links use `/uploads?import=[id]` and load the report on the server.
 - **`/voters`**: map, searchable/paginated table, status and ZIP filters, and an unassigned-only filter. Click a marker to select a voter; grouped markers list all voters at that coordinate. On desktop, **Select an area** lets you drag a rectangle. The table supports individual selection and selecting all filtered voters, including across pages. Selections remain when filters change; the selection count includes hidden selections.
 - **`/batches`**: rename batches, copy links, inspect contents, and enable/disable public access. Select voters in the workspace to create a door-knocking or phone-calling batch, or add them to an existing active batch. Assignment is transactional and repeated assignment is harmless.
