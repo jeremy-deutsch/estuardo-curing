@@ -60,6 +60,7 @@ export function normalizeRow(raw: Record<string, unknown>): {
     state,
     zip,
     phone,
+    support_id: pick("support_id"),
   };
   const errors: string[] = [];
   if (!record.first_name || !record.last_name)

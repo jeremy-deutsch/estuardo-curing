@@ -16,7 +16,7 @@ The one retained HTTP endpoint is `/api/imports/[id]`: GET reads job progress an
 
 1. Install dependencies with `pnpm install` (Node 22+).
 2. Copy `.env.example` to `.env`, or retain your existing `.env`. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from your Supabase project. A legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY` is also supported.
-3. Apply the SQL files in `supabase/migrations/` in filename order in the **Supabase SQL editor**, or set `POSTGRES_SESSION_POOLER_URL` (or `POSTGRES_URL`) and run `pnpm db:migrate`. The command installs the initial schema if needed and applies the voter removal and batch deletion migrations. Existing installations can run it to enable these features without recreating tables. Deleting a batch revokes its volunteer link and preserves voter records and contact history. `pnpm db:check` checks whether the base schema is installed.
+3. Apply the SQL files in `supabase/migrations/` in filename order in the **Supabase SQL editor**, or set `POSTGRES_SESSION_POOLER_URL` (or `POSTGRES_URL`) and run `pnpm db:migrate`. The command installs the initial schema if needed and applies the voter removal, batch deletion, and Support ID migrations. Existing installations can run it to enable these features without recreating tables. Deleting a batch revokes its volunteer link and preserves voter records and contact history. `pnpm db:check` checks whether the base schema is installed.
 4. Create your initial administrator account in **Supabase → Authentication → Users**, with an email and password. Add its user ID to the staff allowlist using the SQL editor:
 
    ```sql
@@ -52,7 +52,7 @@ Unapproved accounts stay signed in on `/pending-approval` and cannot access staf
 - **`/pending-approval`**: signed-in accounts awaiting staff access. Refresh the approval status to enter the app after approval.
 - **`/login`**: email/password authentication. Approved users enter the workspace; unapproved users see their pending status. Staff access always requires both a verified Supabase session and explicit `staff_members` membership.
 - **`/uploads`**: CSV and XLSX uploads, reports, failed-row downloads, and resumable processing. Limits: 5 MB and 10,000 data rows per file. XLSX reads the first worksheet. The supplied CSV and Excel exports each contain 122 supported rows. Report links use `/uploads?import=[id]` and load the report on the server.
-- **`/voters`**: map, searchable/paginated table, status and ZIP filters, and an unassigned-only filter. Click a marker to select a voter; grouped markers list all voters at that coordinate. On desktop, **Select an area** lets you drag a rectangle. The table supports individual selection and selecting all filtered voters, including across pages. Selections remain when filters change; the selection count includes hidden selections.
+- **`/voters`**: map, searchable/paginated table, status and ZIP filters, an unassigned-only filter, and a Supporters checkbox for Strong Support or Lean Support. Click a marker to select a voter; grouped markers list all voters at that coordinate. On desktop, **Select an area** lets you drag a rectangle. The table supports individual selection and selecting all filtered voters, including across pages. Selections remain when filters change; the selection count includes hidden selections.
 - **`/batches`**: rename batches, copy links, inspect contents, and enable/disable public access. Select voters in the workspace to create a door-knocking or phone-calling batch, or add them to an existing active batch. Assignment is transactional and repeated assignment is harmless.
 - **`/batches/[id]`**: staff batch details and a link to the volunteer view. Staff can inspect disabled batches, but status changes require an active link.
 
@@ -73,7 +73,7 @@ Uploads are persisted before geocoding. The browser drives resumable chunks of 1
 
 The browser can pause between chunks. Navigating away may allow the current server request to finish, but subsequent chunks wait until **Resume upload** is clicked. A three-minute claim lease recovers interrupted requests. Upstream/network failures reset the chunk to pending instead of losing progress. Import histories and outcomes are durable; the last 50 uploads are shown.
 
-Political support, party, age, gender, and other demographic fields are not imported or used for selection. The map differentiates curing statuses: uncontacted, interested, cured, no response, and not interested.
+The optional `Support ID` (or `support_id`) column is imported for the Supporters filter. Older imports discarded this field; after applying the Support ID migration, reupload the original file to fill missing Support IDs on existing voters. Reuploads preserve existing nonblank Support IDs. Party, age, gender, and other demographic fields are not imported or used for selection. The map differentiates curing statuses: uncontacted, interested, cured, no response, and not interested.
 
 ## Volunteer access
 

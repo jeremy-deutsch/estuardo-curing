@@ -169,6 +169,7 @@ try {
     state: "MD",
     zip: "20746",
     phone: "",
+    support_id: "Strong Support",
   };
   const importId = (
     await db.query("select public.prepare_import($1,$2) id", [
@@ -221,6 +222,14 @@ try {
     ["duplicate", "imported", "failed"],
   );
   assert.equal(outcomes[2].error, "No exact Census match");
+  const support = await db.query(
+    "select first_name,support_id from public.voters where first_name in ('Alex','Taylor') and last_name='Example' and street='4600 Silver Hill Rd'",
+  );
+  assert.equal(support.rows.length, 2);
+  assert.ok(
+    support.rows.every((row) => row.support_id === "Strong Support"),
+    "New imports and reuploads of existing voters retain Support ID",
+  );
   const imported = claimed.find((r) => r.record.first_name === "Taylor");
   await db.query(
     "update public.import_rows set status='processing',claimed_at=now()-interval '4 minutes' where id=$1",

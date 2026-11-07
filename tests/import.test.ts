@@ -37,7 +37,25 @@ test("both supplied exports produce the same 122 valid records", () => {
   assert.equal(csv[0].record.unit, "");
   assert.ok(csv[0].record.phone.startsWith("+1"));
   assert.ok(!("Support ID" in csv[0].record));
+  assert.equal(csv[0].record.support_id, "None");
+  assert.ok(csv.some((r) => r.record.support_id === "Strong Support"));
+  assert.ok(csv.some((r) => r.record.support_id === "Lean Support"));
   assert.ok(!("V1_PARTY" in csv[0].record));
+});
+test("Support ID is preserved with normalized headers and whitespace", () => {
+  for (const header of ["Support ID", "support_id"]) {
+    const { record, error } = normalizeRow({
+      ...person,
+      [header]: "  Lean   Support  ",
+    });
+    assert.equal(error, null);
+    assert.equal(record.support_id, "Lean Support");
+  }
+  assert.equal(
+    normalizeRow(person as unknown as Record<string, unknown>).record
+      .support_id,
+    "",
+  );
 });
 test("identity tolerates punctuation, casing, and whitespace but preserves apartment differences", () => {
   assert.equal(

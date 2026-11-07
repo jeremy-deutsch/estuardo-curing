@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { expect, fn, waitFor, within } from "storybook/test";
+import { expect, fn, screen, waitFor, within } from "storybook/test";
 import { removeVotersAction } from "../.storybook/mocks/actions";
 import { VotersScreen } from "@/components/voters-screen";
 import { emptyWorkspace, workspace } from "./fixtures";
@@ -124,10 +124,11 @@ export const MapView: Story = {
 
 export const Filtered: Story = {
   play: async ({ canvas, userEvent }) => {
-    await userEvent.selectOptions(
-      canvas.getByLabelText("Filter by status"),
-      "interested",
+    await userEvent.click(
+      canvas.getByRole("button", { name: /Filter by status/ }),
     );
+    await userEvent.click(screen.getByRole("option", { name: "Interested" }));
+    await userEvent.keyboard("{Escape}");
     await expect(
       canvas.getByText("Jordan Chen", { exact: true }),
     ).toBeVisible();
@@ -136,6 +137,105 @@ export const Filtered: Story = {
     ).not.toBeInTheDocument();
     await expect(
       canvas.getByText("Cameron Davis", { exact: true }),
+    ).toBeVisible();
+  },
+};
+
+export const MultipleStatuses: Story = {
+  play: async ({ canvas, userEvent }) => {
+    const filter = canvas.getByRole("button", { name: /Filter by status/ });
+    await userEvent.click(filter);
+    const interested = screen.getByRole("option", {
+      name: "Interested",
+    });
+    const uncontacted = screen.getByRole("option", {
+      name: "Not contacted",
+    });
+    await userEvent.click(interested);
+    await userEvent.click(uncontacted);
+    await expect(interested).toHaveAttribute("aria-selected", "true");
+    await expect(uncontacted).toHaveAttribute("aria-selected", "true");
+    await expect(filter).toHaveTextContent("2 statuses");
+    await userEvent.keyboard("{Escape}");
+    await expect(
+      canvas.getByRole("checkbox", { name: "Select Alex Rivera" }),
+    ).toBeVisible();
+    await expect(
+      canvas.getByRole("checkbox", { name: "Select Jordan Chen" }),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByRole("checkbox", { name: "Select Morgan Patel" }),
+    ).not.toBeInTheDocument();
+    await expect(
+      canvas.getByLabelText("Map of 4 voter locations"),
+    ).toBeVisible();
+    await userEvent.click(filter);
+    await userEvent.click(screen.getByRole("option", { name: "Interested" }));
+    await userEvent.click(
+      screen.getByRole("option", { name: "Not contacted" }),
+    );
+    await userEvent.keyboard("{Escape}");
+    await expect(filter).toHaveTextContent("All statuses");
+    await expect(
+      canvas.getByRole("checkbox", { name: "Select Morgan Patel" }),
+    ).toBeVisible();
+    await expect(
+      canvas.getByLabelText("Map of 8 voter locations"),
+    ).toBeVisible();
+  },
+};
+
+export const Supporters: Story = {
+  args: {
+    data: {
+      ...workspace,
+      voters: workspace.voters.map((voter, index) => ({
+        ...voter,
+        support_id: [
+          "Strong Support",
+          "Lean Support",
+          "None",
+          "Undecided",
+          "Strong Oppose",
+          "",
+        ][index],
+      })),
+    },
+  },
+  play: async ({ canvas, userEvent }) => {
+    const supporters = canvas.getByRole("checkbox", { name: "Supporters" });
+    await expect(supporters).not.toBeChecked();
+    await userEvent.click(supporters);
+    await expect(
+      canvas.getByRole("checkbox", { name: "Select Alex Rivera" }),
+    ).toBeVisible();
+    await expect(
+      canvas.getByRole("checkbox", { name: "Select Jordan Chen" }),
+    ).toBeVisible();
+    await expect(
+      canvas.getByLabelText("Map of 2 voter locations"),
+    ).toBeVisible();
+    for (const voter of workspace.voters.slice(2)) {
+      await expect(
+        canvas.queryByRole("checkbox", {
+          name: `Select ${voter.first_name} ${voter.last_name}`,
+        }),
+      ).not.toBeInTheDocument();
+    }
+    await userEvent.click(
+      canvas.getByRole("button", { name: /Filter by status/ }),
+    );
+    await userEvent.click(screen.getByRole("option", { name: "Interested" }));
+    await userEvent.keyboard("{Escape}");
+    await expect(
+      canvas.queryByRole("checkbox", { name: "Select Alex Rivera" }),
+    ).not.toBeInTheDocument();
+    await expect(
+      canvas.getByRole("checkbox", { name: "Select Jordan Chen" }),
+    ).toBeVisible();
+    await userEvent.click(supporters);
+    await expect(
+      canvas.getByRole("checkbox", { name: "Select Cameron Davis" }),
     ).toBeVisible();
   },
 };
@@ -174,7 +274,7 @@ export const RemoveSelected: Story = {
     const confirm = fn().mockReturnValue(false);
     window.confirm = confirm;
     try {
-      const remove = canvas.getByRole("button", { name: "Remove selected" });
+      const remove = canvas.getByRole("button", { name: "Delete selected" });
       await expect(remove).toBeDisabled();
       await userEvent.click(
         canvas.getByRole("checkbox", { name: "Select Alex Rivera" }),
@@ -206,5 +306,102 @@ export const RemoveSelected: Story = {
     } finally {
       window.confirm = originalConfirm;
     }
+  },
+};
+export const SelectedVoters: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Table" }));
+    await userEvent.click(
+      canvas.getByRole("checkbox", { name: "Select Jordan Chen" }),
+    );
+    const section = canvas.getByRole("button", { name: "Selected voters (1)" });
+    await expect(section).toHaveAttribute("aria-expanded", "true");
+    await expect(canvas.getAllByRole("row")[2]).toHaveTextContent(
+      "Jordan Chen",
+    );
+    await expect(
+      canvas.getAllByRole("checkbox", { name: "Select Jordan Chen" }),
+    ).toHaveLength(1);
+    await userEvent.click(section);
+    await expect(section).toHaveAttribute("aria-expanded", "false");
+    await expect(
+      canvas.queryByRole("checkbox", { name: "Select Jordan Chen" }),
+    ).not.toBeInTheDocument();
+    await expect(
+      canvas.getByRole("button", { name: "Add to batch" }),
+    ).toBeEnabled();
+    await userEvent.keyboard("{Enter}");
+    await expect(section).toHaveAttribute("aria-expanded", "true");
+    await userEvent.type(
+      canvas.getByRole("textbox", { name: "Search voters" }),
+      "Alex",
+    );
+    await expect(
+      canvas.getByRole("checkbox", { name: "Select Jordan Chen" }),
+    ).toBeChecked();
+    await expect(
+      canvas.getByRole("checkbox", { name: "Select Alex Rivera" }),
+    ).toBeVisible();
+    await userEvent.click(
+      canvas.getByRole("checkbox", { name: "Select Jordan Chen" }),
+    );
+    await expect(
+      canvas.queryByRole("button", { name: /Selected voters/ }),
+    ).not.toBeInTheDocument();
+    await userEvent.clear(
+      canvas.getByRole("textbox", { name: "Search voters" }),
+    );
+    await expect(
+      canvas.getByRole("checkbox", { name: "Select Jordan Chen" }),
+    ).not.toBeChecked();
+  },
+};
+
+export const SelectedAcrossPages: Story = {
+  args: {
+    data: {
+      ...workspace,
+      voters: Array.from({ length: 30 }, (_, index) => ({
+        ...workspace.voters[0],
+        id: `voter-${index}`,
+        first_name: `Person ${index + 1}`,
+        last_name: "Example",
+      })),
+    },
+  },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Table" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Next page" }));
+    await userEvent.click(
+      canvas.getByRole("checkbox", { name: "Select Person 30 Example" }),
+    );
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Previous page" }),
+    );
+    await expect(canvas.getAllByRole("row")[2]).toHaveTextContent(
+      "Person 30 Example",
+    );
+    await expect(
+      canvas.getByRole("checkbox", { name: "Select Person 30 Example" }),
+    ).toBeChecked();
+    await userEvent.click(
+      canvas.getByRole("checkbox", { name: "Select all filtered voters" }),
+    );
+    await expect(
+      canvas.getByRole("button", { name: "Selected voters (30)" }),
+    ).toBeVisible();
+    await expect(
+      canvas.getByRole("button", { name: "Next page" }),
+    ).toBeDisabled();
+    await expect(
+      canvas.queryByRole("heading", { name: "No matching voters" }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole("button", { name: "Clear" }));
+    await expect(
+      canvas.queryByRole("button", { name: /Selected voters/ }),
+    ).not.toBeInTheDocument();
+    await expect(
+      canvas.getByRole("button", { name: "Next page" }),
+    ).toBeEnabled();
   },
 };

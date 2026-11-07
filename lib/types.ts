@@ -22,6 +22,7 @@ export interface VoterInput {
   state: string;
   zip: string;
   phone: string;
+  support_id?: string;
 }
 export interface Voter extends VoterInput {
   id: string;

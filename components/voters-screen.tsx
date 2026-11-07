@@ -3,7 +3,15 @@ import ui from "./shared.module.css";
 import styles from "./voters-screen.module.css";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useId, useMemo, useState, useTransition } from "react";
+import {
+  Button,
+  ListBox,
+  ListBoxItem,
+  Popover,
+  Select,
+  SelectValue,
+} from "react-aria-components";
 import { removeVotersAction } from "@/app/actions/voters";
 import { VoterMap } from "./voter-map";
 import { Icon } from "./icon";
@@ -23,11 +31,14 @@ const viewStyles = {
 
 export function VotersScreen({ data }: { data: Workspace }) {
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("");
+  const [statuses, setStatuses] = useState<string[]>([]);
   const [zip, setZip] = useState("");
   const [unassigned, setUnassigned] = useState(false);
+  const [supporters, setSupporters] = useState(false);
   const [view, setView] = useState<"split" | "table" | "map">("split");
   const [selected, setSelected] = useState<string[]>([]);
+  const [selectionExpanded, setSelectionExpanded] = useState(true);
+  const selectedRowsId = useId();
   const [page, setPage] = useState(0);
   const [dialog, setDialog] = useState(false);
   const [saved, setSaved] = useState("");
@@ -83,12 +94,15 @@ export function VotersScreen({ data }: { data: Workspace }) {
           `${fullName(v)} ${v.street} ${v.unit} ${v.city} ${v.zip} ${v.phone}`.toLowerCase();
         return (
           haystack.includes(query.toLowerCase()) &&
-          (!status || (v.status || "uncontacted") === status) &&
+          (!statuses.length || statuses.includes(v.status || "uncontacted")) &&
           (!zip || v.zip === zip) &&
+          (!supporters ||
+            v.support_id === "Strong Support" ||
+            v.support_id === "Lean Support") &&
           (!unassigned || !assigned.has(v.id))
         );
       }) || [],
-    [data, query, status, zip, unassigned, assigned],
+    [data, query, statuses, zip, supporters, unassigned, assigned],
   );
   const zips = useMemo(
     () => [...new Set(data?.voters.map((v) => v.zip))].sort(),
@@ -103,11 +117,17 @@ export function VotersScreen({ data }: { data: Workspace }) {
         : [...new Set([...prev, ...ids])],
     );
   }
+  const selectedIds = useMemo(() => new Set(selected), [selected]);
+  const selectedVoters = useMemo(
+    () => data.voters.filter((v) => selectedIds.has(v.id)),
+    [data.voters, selectedIds],
+  );
+  const remainingVoters = voters.filter((v) => !selectedIds.has(v.id));
   const safePage = Math.min(
     page,
-    Math.max(0, Math.ceil(voters.length / 25) - 1),
+    Math.max(0, Math.ceil(remainingVoters.length / 25) - 1),
   );
-  const visible = voters.slice(safePage * 25, (safePage + 1) * 25);
+  const visible = remainingVoters.slice(safePage * 25, (safePage + 1) * 25);
   const allSelected =
     voters.length > 0 && voters.every((v) => selected.includes(v.id));
   const total = data?.voters.length || 0;
@@ -254,21 +274,56 @@ export function VotersScreen({ data }: { data: Workspace }) {
               }}
             />
           </div>
-          <select
+          <Select
             aria-label="Filter by status"
-            value={status}
-            onChange={(e) => {
-              setStatus(e.target.value);
+            selectionMode="multiple"
+            placeholder="All statuses"
+            className={styles.statusFilter}
+            value={statuses}
+            onChange={(values) => {
+              setStatuses(values.map(String));
               setPage(0);
             }}
           >
-            <option value="">All statuses</option>
-            {Object.entries(statusLabels).map(([key, value]) => (
-              <option key={key} value={key}>
-                {value}
-              </option>
-            ))}
-          </select>
+            <Button className={styles.statusFilterButton}>
+              <SelectValue>
+                {({ selectedItems, selectedText, isPlaceholder }) =>
+                  isPlaceholder
+                    ? "All statuses"
+                    : selectedItems.length === 1
+                      ? selectedText
+                      : `${selectedItems.length} statuses`
+                }
+              </SelectValue>
+              <span aria-hidden="true">
+                <Icon name="down" />
+              </span>
+            </Button>
+            <Popover className={styles.statusFilterPopover}>
+              <ListBox className={styles.statusFilterList}>
+                {Object.entries(statusLabels).map(([key, value]) => (
+                  <ListBoxItem
+                    key={key}
+                    id={key}
+                    textValue={value}
+                    className={styles.statusFilterOption}
+                  >
+                    {({ isSelected }) => (
+                      <>
+                        <span
+                          className={styles.statusFilterCheck}
+                          aria-hidden="true"
+                        >
+                          {isSelected && <Icon name="check" />}
+                        </span>
+                        {value}
+                      </>
+                    )}
+                  </ListBoxItem>
+                ))}
+              </ListBox>
+            </Popover>
+          </Select>
           <select
             aria-label="Filter by ZIP code"
             value={zip}
@@ -282,14 +337,27 @@ export function VotersScreen({ data }: { data: Workspace }) {
               <option key={z}>{z}</option>
             ))}
           </select>
-          <label className={styles.checkboxFilter}>
-            <input
-              type="checkbox"
-              checked={unassigned}
-              onChange={(e) => setUnassigned(e.target.checked)}
-            />
-            Unassigned only
-          </label>
+          <div className={styles.checkboxFilters}>
+            <label className={styles.checkboxFilter}>
+              <input
+                type="checkbox"
+                checked={unassigned}
+                onChange={(e) => setUnassigned(e.target.checked)}
+              />
+              Unassigned only
+            </label>
+            <label className={styles.checkboxFilter}>
+              <input
+                type="checkbox"
+                checked={supporters}
+                onChange={(e) => {
+                  setSupporters(e.target.checked);
+                  setPage(0);
+                }}
+              />
+              Supporters
+            </label>
+          </div>
         </div>
         <div className={styles.selectionBar}>
           <span>
@@ -317,7 +385,7 @@ export function VotersScreen({ data }: { data: Workspace }) {
               onClick={removeSelected}
             >
               <Icon name="close" />
-              {removing ? "Removing…" : "Remove selected"}
+              {removing ? "Removing…" : "Delete selected"}
             </button>
             <button
               className={`${ui.button} ${styles.button} ${ui.small} ${ui.primary}`}
@@ -378,9 +446,36 @@ export function VotersScreen({ data }: { data: Workspace }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {visible.map((v) => (
+                    {selectedVoters.length > 0 && (
+                      <tr className={styles.selectedHeading}>
+                        <td colSpan={view === "table" ? 5 : 3}>
+                          <button
+                            type="button"
+                            className={styles.selectionToggle}
+                            aria-expanded={selectionExpanded}
+                            aria-controls={selectedVoters
+                              .map((v) => `${selectedRowsId}-${v.id}`)
+                              .join(" ")}
+                            onClick={() =>
+                              setSelectionExpanded((value) => !value)
+                            }
+                          >
+                            <Icon name="down" />
+                            Selected voters (
+                            {selectedVoters.length.toLocaleString("en-US")})
+                          </button>
+                        </td>
+                      </tr>
+                    )}
+                    {[...selectedVoters, ...visible].map((v) => (
                       <tr
                         key={v.id}
+                        id={
+                          selectedIds.has(v.id)
+                            ? `${selectedRowsId}-${v.id}`
+                            : undefined
+                        }
+                        hidden={selectedIds.has(v.id) && !selectionExpanded}
                         className={
                           selected.includes(v.id) ? styles.rowSelected : ""
                         }
@@ -446,7 +541,7 @@ export function VotersScreen({ data }: { data: Workspace }) {
                     ))}
                   </tbody>
                 </table>
-                {!visible.length && (
+                {!voters.length && (
                   <div className={ui.emptyState}>
                     <span className={ui.featureIcon}>
                       <Icon name={total ? "search" : "voters"} />
@@ -473,10 +568,11 @@ export function VotersScreen({ data }: { data: Workspace }) {
               </div>
               <div className={ui.tablePagination}>
                 <span>
-                  {voters.length
-                    ? `${safePage * 25 + 1}–${Math.min((safePage + 1) * 25, voters.length)}`
+                  {remainingVoters.length
+                    ? `${safePage * 25 + 1}–${Math.min((safePage + 1) * 25, remainingVoters.length)}`
                     : "0"}{" "}
-                  of {voters.length.toLocaleString("en-US")} voters
+                  of {remainingVoters.length.toLocaleString("en-US")}{" "}
+                  {selectedVoters.length ? "unselected voters" : "voters"}
                 </span>
                 <div>
                   <button
@@ -490,7 +586,7 @@ export function VotersScreen({ data }: { data: Workspace }) {
                   <button
                     className={ui.iconButton}
                     aria-label="Next page"
-                    disabled={(safePage + 1) * 25 >= voters.length}
+                    disabled={(safePage + 1) * 25 >= remainingVoters.length}
                     onClick={() => setPage(safePage + 1)}
                   >
                     <Icon name="arrow" />
