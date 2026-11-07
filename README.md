@@ -28,6 +28,17 @@ The one retained HTTP endpoint is `/api/imports/[id]`: GET reads job progress an
 
 If `db.YOUR_PROJECT.supabase.co` does not resolve or your network cannot reach an IPv6-only direct database endpoint, copy the **Session pooler** connection string from Supabase's Connect dialog into `POSTGRES_SESSION_POOLER_URL`. The SQL editor also works without a local database connection. Never put database passwords or Supabase secret/service-role keys in `NEXT_PUBLIC_*` variables. Normal staff and public workflows use the publishable key and authenticated sessions. Staff management additionally uses a server-only secret key.
 
+## Automatic migrations with Vercel and Supabase
+
+The [Vercel/Supabase integration](https://supabase.com/docs/guides/integrations/vercel-marketplace) syncs database credentials into Vercel. To apply committed migrations automatically, also configure the [Supabase GitHub integration](https://supabase.com/docs/guides/deployment/branching/github-integration):
+
+1. Before enabling automatic deployment on an existing database, compare its schema and Supabase migration history with `supabase/migrations/`. The local `pnpm db:migrate` script and SQL editor do not record files in Supabase's migration history. Use the Supabase CLI's `migration list` and, only for migrations whose SQL has already been fully applied, `migration repair --status applied <version>` to reconcile history. Otherwise the integration may try to recreate existing tables. Leave `202611070004` pending if `public.voters.support_id` is missing; marking it applied would skip the fix.
+2. In **Supabase → Project Settings → Integrations → GitHub**, authorize GitHub and select this repository. Set **Working directory** to `.` because `supabase/` is at the repository root.
+3. Set the production branch to `main` and enable **Deploy to production**. Keep the Vercel production branch set to `main` as well.
+4. Push a commit to `main`, then check the Supabase deployment logs for the migration step. It should apply pending SQL files, including `202611070004_supporters.sql`, which adds `public.voters.support_id` and updates the importer. Reupload older voter exports to recover Support IDs that the old importer discarded.
+
+Supabase and Vercel both react to the Git push; this setup does not wait for Vercel to finish deploying. Strict ordering after a successful Vercel deployment requires a separate deployment-event workflow. No GitHub Actions workflow or Vercel build-command change is needed for Supabase's native GitHub deployment. See [Supabase migration history and repair](https://supabase.com/docs/guides/deployment/database-migrations) for the one-time transition from manually applied SQL.
+
 ## Signup and staff approval
 
 Configure these environment variables on the server (and restart the app):

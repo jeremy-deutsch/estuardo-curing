@@ -23,7 +23,10 @@ export async function staffAccounts(db: SupabaseClient) {
         "user_id",
         data.users.map((user) => user.id),
       );
-    if (members.error) throw new Error("Unable to load staff memberships.");
+    if (members.error)
+      throw new Error(
+        `Unable to load staff memberships. ${members.error.details}`,
+      );
     const ids = new Set(members.data.map((member) => member.user_id));
     accounts.push(
       ...data.users.map((user) => ({
