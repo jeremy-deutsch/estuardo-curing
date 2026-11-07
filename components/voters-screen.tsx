@@ -8,7 +8,12 @@ import { removeVotersAction } from "@/app/actions/voters";
 import { VoterMap } from "./voter-map";
 import { Icon } from "./icon";
 import { BatchDialog } from "./batch-dialog";
-import { fullName, statusLabels, type Workspace } from "@/lib/types";
+import {
+  fullName,
+  statusLabels,
+  type Batch,
+  type Workspace,
+} from "@/lib/types";
 
 const viewStyles = {
   split: styles.viewSplit,
@@ -60,6 +65,17 @@ export function VotersScreen({ data }: { data: Workspace }) {
     () => new Set(data?.batches.flatMap((b) => b.voter_ids)),
     [data],
   );
+  const batchesByVoter = useMemo(() => {
+    const memberships = new Map<string, Batch[]>();
+    for (const batch of data.batches) {
+      for (const id of batch.voter_ids) {
+        const batches = memberships.get(id) || [];
+        batches.push(batch);
+        memberships.set(id, batches);
+      }
+    }
+    return memberships;
+  }, [data.batches]);
   const voters = useMemo(
     () =>
       data?.voters.filter((v) => {
@@ -78,12 +94,12 @@ export function VotersScreen({ data }: { data: Workspace }) {
     () => [...new Set(data?.voters.map((v) => v.zip))].sort(),
     [data],
   );
-  function toggle(ids: string[]) {
+  function toggle(ids: string[], toggleGroup = false) {
     setSelected((prev) =>
-      ids.length === 1
-        ? prev.includes(ids[0])
-          ? prev.filter((id) => id !== ids[0])
-          : [...prev, ids[0]]
+      ids.length === 1 || toggleGroup
+        ? ids.every((id) => prev.includes(id))
+          ? prev.filter((id) => !ids.includes(id))
+          : [...new Set([...prev, ...ids])]
         : [...new Set([...prev, ...ids])],
     );
   }
@@ -319,6 +335,7 @@ export function VotersScreen({ data }: { data: Workspace }) {
               voters={voters}
               selected={selected}
               onSelect={toggle}
+              onToggle={(ids) => toggle(ids, true)}
               className={styles.mapPanel}
               canvasClassName={styles.mapCanvas}
             />
@@ -386,12 +403,32 @@ export function VotersScreen({ data }: { data: Workspace }) {
                           </small>
                         </td>
                         <td>
-                          <span
-                            className={`${ui.statusChip} ${styles.statusChip} ${ui[v.status || "uncontacted"] || ""}`}
-                          >
-                            <i />
-                            {statusLabels[v.status || "uncontacted"]}
-                          </span>
+                          <div className={styles.statusBadges}>
+                            <span
+                              className={`${ui.statusChip} ${styles.statusChip} ${ui[v.status || "uncontacted"] || ""}`}
+                            >
+                              <i />
+                              {statusLabels[v.status || "uncontacted"]}
+                            </span>
+                            {batchesByVoter.get(v.id)?.map((batch) => (
+                              <Link
+                                key={batch.id}
+                                href={`/batches/${batch.id}`}
+                                className={`${ui.statusChip} ${styles.statusChip} ${styles.batchBadge}`}
+                                title={`Open batch: ${batch.name}`}
+                                aria-label={`${batch.kind === "phone" ? "Being called" : "Being knocked"} — open batch ${batch.name}`}
+                              >
+                                <Icon
+                                  name={
+                                    batch.kind === "phone" ? "phone" : "door"
+                                  }
+                                />
+                                {batch.kind === "phone"
+                                  ? "Being called"
+                                  : "Being knocked"}
+                              </Link>
+                            ))}
+                          </div>
                         </td>
                         {view === "table" && (
                           <>

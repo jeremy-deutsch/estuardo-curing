@@ -67,7 +67,7 @@
   background: white;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  overflow: hidden;
+  overflow: clip;
   box-shadow: var(--shadow);
 }
 .viewSwitch {
@@ -179,12 +179,36 @@
   padding-right: 3px;
   padding-left: 18px;
 }
+.voterWorkspace input[type="checkbox"] {
+  width: 21px;
+  height: 21px;
+  min-height: 21px;
+}
+.statusBadges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+}
+.batchBadge {
+  color: #45657a;
+  border-color: #d9e4ed;
+  background: #eff5f9;
+}
+.batchBadge:hover {
+  background: #e0ecf4;
+  border-color: #a5bdce;
+}
+.batchBadge:focus-visible {
+  outline: 2px solid #45657a;
+  outline-offset: 2px;
+}
 .rowSelected {
   background: #f0f5e9;
 }
 .voterTable td {
-  padding-top: 15px;
-  padding-bottom: 15px;
+  padding-top: 11px;
+  padding-bottom: 11px;
 }
 .voterTable th:last-child,
 .voterTable td:last-child {
@@ -197,8 +221,20 @@
     min-height: 610px;
   }
   .voterTable td {
-    padding-top: 19px;
-    padding-bottom: 19px;
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+}
+@media (min-width: 1001px) {
+  .viewSplit .mapPanel {
+    position: sticky;
+    top: 20px;
+    align-self: start;
+    height: min(480px, calc(100dvh - 40px));
+    min-height: 0;
+  }
+  .viewSplit .mapCanvas {
+    min-height: 0;
   }
 }
 @media (max-width: 1200px) {

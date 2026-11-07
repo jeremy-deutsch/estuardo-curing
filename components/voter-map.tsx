@@ -18,12 +18,14 @@ export function VoterMap({
   voters,
   selected = [],
   onSelect,
+  onToggle,
   className = "",
   canvasClassName = "",
 }: {
   voters: Voter[];
   selected?: string[];
   onSelect?: (ids: string[]) => void;
+  onToggle?: (ids: string[]) => void;
   className?: string;
   canvasClassName?: string;
 }) {
@@ -116,6 +118,12 @@ export function VoterMap({
         keyboard: true,
         title: group.map(fullName).join(", "),
       });
+      if (onToggle) {
+        marker.on("dblclick", (event: Leaflet.LeafletMouseEvent) => {
+          L.DomEvent.stop(event.originalEvent);
+          onToggle(group.map((person) => person.id));
+        });
+      }
       const popup = document.createElement("div");
       popup.className = styles.mapPopup;
       for (const person of group) {
@@ -154,7 +162,7 @@ export function VoterMap({
       );
       fitted.current = identity;
     }
-  }, [ready, voters, selected, onSelect]);
+  }, [ready, voters, selected, onSelect, onToggle]);
   useEffect(() => {
     const L = leaflet.current;
     const m = map.current;

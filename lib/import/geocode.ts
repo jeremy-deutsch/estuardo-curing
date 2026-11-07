@@ -37,7 +37,7 @@ export function parseGeocodes(
         error:
           row[2] === "Tie"
             ? "Census returned multiple possible addresses"
-            : "Census could not find an exact address match",
+            : `Census could not find an exact address match for "${row[1]}"`,
       });
   }
   for (const id of ids)
@@ -48,13 +48,7 @@ export function parseGeocodes(
 export async function geocode(rows: { id: string; record: VoterInput }[]) {
   const csv = rows
     .map(({ id, record: v }) =>
-      [
-        id,
-        normalizeAddress([v.street, v.unit].filter(Boolean).join(" ")),
-        v.city,
-        v.state,
-        v.zip,
-      ]
+      [id, normalizeAddress(v.street), v.city, v.state, v.zip]
         .map(csvCell)
         .join(","),
     )
