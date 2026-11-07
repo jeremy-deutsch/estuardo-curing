@@ -3,7 +3,8 @@ import ui from "./shared.module.css";
 import styles from "./voters-screen.module.css";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { removeVotersAction } from "@/app/actions/voters";
 import { VoterMap } from "./voter-map";
 import { Icon } from "./icon";
 import { BatchDialog } from "./batch-dialog";
@@ -25,6 +26,36 @@ export function VotersScreen({ data }: { data: Workspace }) {
   const [page, setPage] = useState(0);
   const [dialog, setDialog] = useState(false);
   const [saved, setSaved] = useState("");
+  const [removing, startRemoving] = useTransition();
+  const [removeError, setRemoveError] = useState("");
+  const [removed, setRemoved] = useState<number | null>(null);
+  function removeSelected() {
+    const ids = [...selected];
+    if (
+      !ids.length ||
+      removing ||
+      !window.confirm(
+        `Remove ${ids.length.toLocaleString("en-US")} selected ${ids.length === 1 ? "voter" : "voters"}? They will be removed from the voter list and all batches. This cannot be undone.`,
+      )
+    )
+      return;
+    setRemoveError("");
+    setRemoved(null);
+    startRemoving(async () => {
+      try {
+        const result = await removeVotersAction(ids);
+        if (!result.ok) {
+          setRemoveError(result.error);
+          return;
+        }
+        setSelected((prev) => prev.filter((id) => !ids.includes(id)));
+        setSaved("");
+        setRemoved(result.data.count);
+      } catch {
+        setRemoveError("Unable to remove voters. Please try again.");
+      }
+    });
+  }
   const assigned = useMemo(
     () => new Set(data?.batches.flatMap((b) => b.voter_ids)),
     [data],
@@ -142,6 +173,24 @@ export function VotersScreen({ data }: { data: Workspace }) {
           </button>
         </div>
       )}
+      {removeError && (
+        <div className={`${ui.alert} ${ui.error}`} role="alert">
+          {removeError}
+        </div>
+      )}
+      {removed !== null && (
+        <div className={`${ui.alert} ${ui.success}`} role="status">
+          {removed.toLocaleString("en-US")} {removed === 1 ? "voter" : "voters"}{" "}
+          removed.
+          <button
+            className={ui.iconButton}
+            onClick={() => setRemoved(null)}
+            aria-label="Dismiss"
+          >
+            <Icon name="close" />
+          </button>
+        </div>
+      )}
       <section className={styles.voterWorkspace}>
         <div className={ui.sectionTop}>
           <div>
@@ -152,7 +201,8 @@ export function VotersScreen({ data }: { data: Workspace }) {
               </span>
             </h2>
             <p className={ui.muted}>
-              Select voters from the map or table to build a batch.
+              Select voters from the map or table to build a batch or remove
+              them.
             </p>
           </div>
           <div className={styles.viewSwitch} aria-label="Voter view">
@@ -244,14 +294,24 @@ export function VotersScreen({ data }: { data: Workspace }) {
               </>
             )}
           </span>
-          <button
-            className={`${ui.button} ${styles.button} ${ui.small} ${ui.primary}`}
-            disabled={!selected.length}
-            onClick={() => setDialog(true)}
-          >
-            <Icon name="plus" />
-            Add to batch
-          </button>
+          <div className={styles.selectionActions}>
+            <button
+              className={`${ui.button} ${styles.button} ${ui.small} ${styles.removeButton}`}
+              disabled={!selected.length || removing}
+              onClick={removeSelected}
+            >
+              <Icon name="close" />
+              {removing ? "Removing…" : "Remove selected"}
+            </button>
+            <button
+              className={`${ui.button} ${styles.button} ${ui.small} ${ui.primary}`}
+              disabled={!selected.length || removing}
+              onClick={() => setDialog(true)}
+            >
+              <Icon name="plus" />
+              Add to batch
+            </button>
+          </div>
         </div>
         <div className={`${styles.voterViews} ${viewStyles[view]}`}>
           {view !== "table" && (

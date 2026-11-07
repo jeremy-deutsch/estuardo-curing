@@ -84,7 +84,9 @@ try {
   await db.query("set local role anon");
   await denied("select * from public.voters");
   await denied("select * from public.batches");
+  await denied(`delete from public.batches where id='${ids.batch}'`);
   await denied("select * from public.import_rows");
+  await denied(`select public.remove_voters(array['${ids.voter}']::uuid[])`);
   assert.equal(
     (await db.query("select public.read_public_batch('invalid') as b")).rows[0]
       .b,
@@ -137,6 +139,16 @@ try {
   await denied(
     "insert into public.batches(name,kind) values('Unauthorized','door')",
   );
+  assert.equal(
+    (
+      await db.query("delete from public.batches where id=$1 returning id", [
+        ids.batch,
+      ])
+    ).rowCount,
+    0,
+    "Unapproved accounts cannot delete batches",
+  );
+  await denied(`select public.remove_voters(array['${ids.voter}']::uuid[])`);
   await db.query("select set_config('request.jwt.claim.sub',$1,true)", [
     ids.staff,
   ]);
@@ -278,6 +290,111 @@ try {
       )
     ).rows[0].n,
     2,
+  );
+  await db.query("set local role authenticated");
+  await db.query("select set_config('request.jwt.claim.sub',$1,true)", [
+    ids.staff,
+  ]);
+  assert.equal(
+    (
+      await db.query("select public.remove_voters($1) n", [
+        [ids.voter, ids.voter],
+      ])
+    ).rows[0].n,
+    1,
+  );
+  assert.equal(
+    (
+      await db.query(
+        "select count(*)::int n from public.batch_voters where voter_id=$1",
+        [ids.voter],
+      )
+    ).rows[0].n,
+    0,
+  );
+  assert.equal(
+    (
+      await db.query("select count(*)::int n from public.voters where id=$1", [
+        ids.otherVoter,
+      ])
+    ).rows[0].n,
+    1,
+  );
+  assert.equal(
+    (
+      await db.query(
+        "select count(*)::int n from public.status_events where batch_id=$1 and voter_id is null",
+        [ids.batch],
+      )
+    ).rows[0].n,
+    2,
+    "Removing a voter preserves their contact history",
+  );
+  assert.equal(
+    (await db.query("select public.remove_voters($1) n", [[ids.voter]])).rows[0]
+      .n,
+    0,
+  );
+  // Roll back this deletion so we can separately check voter preservation.
+  const historyIds = (
+    await db.query("select id from public.status_events where batch_id=$1", [
+      ids.batch,
+    ])
+  ).rows.map((event) => event.id);
+  await db.query("savepoint batch_deletion");
+  assert.equal(
+    (
+      await db.query("delete from public.batches where id=$1 returning id", [
+        ids.batch,
+      ])
+    ).rowCount,
+    1,
+  );
+  assert.equal(
+    (
+      await db.query(
+        "select count(*)::int n from public.status_events where id=any($1::bigint[]) and batch_id is null and voter_id is null",
+        [historyIds],
+      )
+    ).rows[0].n,
+    2,
+    "Deleting a batch preserves contact history",
+  );
+  await db.query("rollback to savepoint batch_deletion");
+  await db.query("delete from public.batches where id=$1", [assigned]);
+  assert.equal(
+    (
+      await db.query(
+        "select count(*)::int n from public.batch_voters where batch_id=$1",
+        [assigned],
+      )
+    ).rows[0].n,
+    0,
+  );
+  assert.equal(
+    (
+      await db.query("select count(*)::int n from public.voters where id=$1", [
+        ids.otherVoter,
+      ])
+    ).rows[0].n,
+    1,
+    "Deleting a batch preserves its voters",
+  );
+  await db.query("delete from public.batches where id=$1", [ids.batch]);
+  await db.query("set local role anon");
+  assert.equal(
+    (await db.query("select public.read_public_batch($1) as b", [token]))
+      .rows[0].b,
+    null,
+  );
+  assert.equal(
+    (
+      await db.query(
+        "select public.set_public_status($1,$2,'cured',$3) as result",
+        [token, ids.otherVoter, cleared.updated_at],
+      )
+    ).rows[0].result.error,
+    "unavailable",
   );
   console.log(
     "Database integration checks passed: PostGIS, RLS, staff authorization, token scope, status conflicts, clearing, revocation, audit history, import outcomes, resumable leases, idempotency, and batch assignment.",

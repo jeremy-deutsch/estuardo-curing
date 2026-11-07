@@ -3,6 +3,11 @@ import type { VoterInput } from "@/lib/types";
 export type GeocodeResult =
   { latitude: number; longitude: number } | { error: string };
 const csvCell = (s: string) => `"${s.replaceAll('"', '""')}"`;
+const normalizeAddress = (address: string) =>
+  address
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\s+#?\d+$/, "");
 export function parseGeocodes(
   csv: string,
   ids: string[],
@@ -43,7 +48,13 @@ export function parseGeocodes(
 export async function geocode(rows: { id: string; record: VoterInput }[]) {
   const csv = rows
     .map(({ id, record: v }) =>
-      [id, [v.street, v.unit].filter(Boolean).join(" "), v.city, v.state, v.zip]
+      [
+        id,
+        normalizeAddress([v.street, v.unit].filter(Boolean).join(" ")),
+        v.city,
+        v.state,
+        v.zip,
+      ]
         .map(csvCell)
         .join(","),
     )

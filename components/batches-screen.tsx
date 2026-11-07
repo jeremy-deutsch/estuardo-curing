@@ -5,6 +5,7 @@ import styles from "./batches-screen.module.css";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Icon } from "./icon";
+import { DeleteBatchButton } from "./delete-batch-button";
 import { updateBatchAction } from "@/app/actions/batches";
 import type { Batch, Voter, Workspace } from "@/lib/types";
 import { formatDate } from "@/lib/format";
@@ -145,6 +146,11 @@ function BatchRow({
             View
             <Icon name="arrow" />
           </Link>
+          <DeleteBatchButton
+            batch={batch}
+            disabled={busy}
+            onDeleted={() => onMessage("Batch deleted.")}
+          />
         </div>
       </td>
     </tr>

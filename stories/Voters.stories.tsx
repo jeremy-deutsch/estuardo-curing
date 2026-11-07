@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { expect } from "storybook/test";
+import { expect, fn, waitFor } from "storybook/test";
+import { removeVotersAction } from "../.storybook/mocks/actions";
 import { VotersScreen } from "@/components/voters-screen";
 import { emptyWorkspace, workspace } from "./fixtures";
 import { withStaffShell } from "./staff-decorator";
@@ -76,5 +77,45 @@ export const AssignToBatch: Story = {
     await expect(canvas.getByRole("dialog")).toHaveTextContent(
       "Assign 2 selected voters",
     );
+  },
+};
+
+export const RemoveSelected: Story = {
+  play: async ({ canvas, userEvent }) => {
+    const originalConfirm = window.confirm;
+    const confirm = fn().mockReturnValue(false);
+    window.confirm = confirm;
+    try {
+      const remove = canvas.getByRole("button", { name: "Remove selected" });
+      await expect(remove).toBeDisabled();
+      await userEvent.click(
+        canvas.getByRole("checkbox", { name: "Select Alex Rivera" }),
+      );
+      await userEvent.click(
+        canvas.getByRole("checkbox", { name: "Select Jordan Chen" }),
+      );
+      await userEvent.click(remove);
+      await expect(confirm).toHaveBeenCalledWith(
+        expect.stringContaining("Remove 2 selected voters?"),
+      );
+      await expect(removeVotersAction).not.toHaveBeenCalled();
+      await expect(
+        canvas.getByRole("checkbox", { name: "Select Alex Rivera" }),
+      ).toBeChecked();
+      confirm.mockReturnValue(true);
+      await userEvent.click(remove);
+      await waitFor(() =>
+        expect(removeVotersAction).toHaveBeenCalledWith([
+          workspace.voters[0].id,
+          workspace.voters[1].id,
+        ]),
+      );
+      await expect(canvas.getByRole("status")).toHaveTextContent(
+        "2 voters removed.",
+      );
+      await expect(remove).toBeDisabled();
+    } finally {
+      window.confirm = originalConfirm;
+    }
   },
 };

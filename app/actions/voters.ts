@@ -2,9 +2,25 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { actionResult } from "@/lib/action-result";
-import { HttpError } from "@/lib/auth";
+import { HttpError, staffSession } from "@/lib/auth";
 import { publicClient } from "@/lib/supabase/server";
 import type { VoterStatus } from "@/lib/types";
+
+export async function removeVotersAction(voterIds: string[]) {
+  return actionResult(async () => {
+    const { db } = await staffSession();
+    const ids = z.array(z.uuid()).min(1).max(10000).parse(voterIds);
+    const { data, error } = await db.rpc("remove_voters", {
+      p_voter_ids: [...new Set(ids)],
+    });
+    if (error) throw error;
+    revalidatePath("/voters");
+    revalidatePath("/batches");
+    revalidatePath("/batches/[id]", "page");
+    revalidatePath("/batch/[token]", "page");
+    return { count: data as number };
+  });
+}
 
 export async function setVoterStatusAction(
   batchToken: string,

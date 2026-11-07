@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import type { Batch, PublicBatch } from "@/lib/types";
 import { Icon } from "./icon";
 import { PublicBatchView } from "./public-batch";
+import { DeleteBatchButton } from "./delete-batch-button";
 export function BatchDetail({
   batch,
   content,
@@ -38,6 +39,7 @@ export function BatchDetail({
         </Link>
         {batch && (
           <div className={`${ui.rowActions} ${styles.rowActions}`}>
+            <DeleteBatchButton batch={batch} redirectToList />
             <button
               className={`${ui.button} ${styles.button} ${ui.small}`}
               disabled={!batch.active}

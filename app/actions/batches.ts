@@ -1,8 +1,34 @@
 "use server";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { staffSession, HttpError } from "@/lib/auth";
 import { actionResult } from "@/lib/action-result";
+
+export async function deleteBatchAction(
+  batchId: string,
+  redirectToList = false,
+) {
+  const result = await actionResult(async () => {
+    const { db } = await staffSession();
+    const id = z.uuid().parse(batchId);
+    const { data, error } = await db
+      .from("batches")
+      .delete()
+      .eq("id", id)
+      .select("id,public_token")
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) throw new HttpError("Batch not found.", 404);
+    revalidatePath("/batches");
+    revalidatePath(`/batches/${id}`);
+    revalidatePath("/voters");
+    revalidatePath(`/batch/${data.public_token}`);
+    return null;
+  });
+  if (result.ok && redirectToList) redirect("/batches");
+  return result;
+}
 
 export async function assignBatchAction(input: {
   name: string;

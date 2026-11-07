@@ -16,7 +16,7 @@ The one retained HTTP endpoint is `/api/imports/[id]`: GET reads job progress an
 
 1. Install dependencies with `pnpm install` (Node 22+).
 2. Copy `.env.example` to `.env`, or retain your existing `.env`. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from your Supabase project. A legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY` is also supported.
-3. Apply `supabase/migrations/202611070001_ballot_operations.sql` in the **Supabase SQL editor**, or set `POSTGRES_SESSION_POOLER_URL` (or `POSTGRES_URL`) and run `pnpm db:migrate`. This first migration creates new tables; it intentionally refuses to overwrite existing application tables. `pnpm db:check` checks whether the schema is installed.
+3. Apply the SQL files in `supabase/migrations/` in filename order in the **Supabase SQL editor**, or set `POSTGRES_SESSION_POOLER_URL` (or `POSTGRES_URL`) and run `pnpm db:migrate`. The command installs the initial schema if needed and applies the voter removal and batch deletion migrations. Existing installations can run it to enable these features without recreating tables. Deleting a batch revokes its volunteer link and preserves voter records and contact history. `pnpm db:check` checks whether the base schema is installed.
 4. Create your initial administrator account in **Supabase → Authentication → Users**, with an email and password. Add its user ID to the staff allowlist using the SQL editor:
 
    ```sql

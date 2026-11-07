@@ -105,6 +105,7 @@
   font-weight: 400;
 }
 .selectionBar {
+  flex-wrap: wrap;
   padding: 11px 21px;
   border-top: 1px solid var(--line);
   background: #fafbf7;
@@ -113,6 +114,15 @@
   justify-content: space-between;
   gap: 10px;
   min-height: 55px;
+}
+.selectionActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.selectionBar .removeButton {
+  color: #a34235;
+  border-color: #e5c9c3;
 }
 .selectionBar > span {
   font-size: 13px;

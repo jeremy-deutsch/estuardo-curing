@@ -27,14 +27,33 @@ try {
         : "Ballot operations schema not yet installed.",
     );
   } else {
-    if (existing.rows[0].voters || existing.rows[0].staff)
+    if (Boolean(existing.rows[0].voters) !== Boolean(existing.rows[0].staff))
       throw new Error(
         "Tables already exist. Review the schema before applying this first migration again.",
+      );
+    if (!existing.rows[0].voters)
+      await client.query(
+        await readFile(
+          new URL(
+            "../supabase/migrations/202611070001_ballot_operations.sql",
+            import.meta.url,
+          ),
+          "utf8",
+        ),
       );
     await client.query(
       await readFile(
         new URL(
-          "../supabase/migrations/202611070001_ballot_operations.sql",
+          "../supabase/migrations/202611070002_remove_voters.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
+    await client.query(
+      await readFile(
+        new URL(
+          "../supabase/migrations/202611070003_delete_batches.sql",
           import.meta.url,
         ),
         "utf8",

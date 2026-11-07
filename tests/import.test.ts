@@ -138,3 +138,37 @@ test("Census submission contains addresses only and uses a multipart batch reque
   assert.deepEqual(result.get("a"), { longitude: -76.9, latitude: 38.8 });
   mocked.mock.restore();
 });
+
+test("Census submission collapses whitespace and removes trailing numeric apartments", async (t) => {
+  const records = [
+    { ...person, street: "  4600   Silver  Hill Rd  201  " },
+    { ...person, street: "4600 Silver Hill Rd  #201" },
+    { ...person, street: "4600   Silver Hill Rd", unit: " #201  " },
+    { ...person, street: "4600 Silver Hill Rd", unit: "201" },
+    { ...person, street: "4600  Silver Hill Rd" },
+    { ...person, street: "4600  Silver Hill Rd 2B" },
+  ];
+  const original = structuredClone(records);
+  t.mock.method(
+    globalThis,
+    "fetch",
+    async (_url: unknown, options?: RequestInit) => {
+      const form = options?.body as FormData;
+      const csv = await (form.get("addressFile") as File).text();
+      assert.equal(
+        csv,
+        records
+          .map(
+            (_, index) =>
+              `"${index}","4600 Silver Hill Rd${index === 5 ? " 2B" : ""}","Suitland","MD","20746"`,
+          )
+          .join("\n"),
+      );
+      return new Response("");
+    },
+  );
+  await geocode(
+    records.map((record, index) => ({ id: String(index), record })),
+  );
+  assert.deepEqual(records, original);
+});

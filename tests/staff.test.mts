@@ -22,6 +22,8 @@ vi.mock("react", async (importOriginal) => ({
 import { isSuperAdmin, superAdminSession } from "../lib/super-admin";
 import { staffSession, staffPageSession } from "../lib/auth";
 import { approveStaffAction } from "../app/actions/staff";
+import { removeVotersAction } from "../app/actions/voters";
+import { deleteBatchAction } from "../app/actions/batches";
 import { signupAction, loginAction } from "../app/actions/auth";
 import { staffAccounts } from "../lib/staff-management";
 import { GET } from "../app/auth/callback/route";
@@ -182,6 +184,159 @@ describe("staff approval", () => {
       "Unable to approve",
     );
     expect(mocks.revalidate).not.toHaveBeenCalled();
+  });
+});
+
+describe("batch deletion", () => {
+  function deletionFixture(
+    data: { id: string; public_token: string } | null = {
+      id: applicantId,
+      public_token: "volunteer-token",
+    },
+    error: Error | null = null,
+  ) {
+    const f = sessionFixture({ id: applicantId });
+    const maybeSingle = vi.fn().mockResolvedValue({ data, error });
+    const select = vi.fn().mockReturnValue({ maybeSingle });
+    const eq = vi.fn().mockReturnValue({ select });
+    const remove = vi.fn().mockReturnValue({ eq });
+    f.from.mockImplementation((table) =>
+      table === "batches"
+        ? { delete: remove }
+        : { select: vi.fn().mockReturnValue({ eq: f.eq }) },
+    );
+    return { remove, eq };
+  }
+
+  it("blocks signed-out and unapproved callers", async () => {
+    for (const [session, code] of [
+      [{ signedIn: false }, 401],
+      [{ approved: false }, 403],
+    ] as const) {
+      const f = sessionFixture(session);
+      expect(await deleteBatchAction(applicantId)).toMatchObject({
+        ok: false,
+        code,
+      });
+      expect(f.from).not.toHaveBeenCalledWith("batches");
+    }
+  });
+
+  it("rejects malformed IDs before deleting", async () => {
+    const f = deletionFixture();
+    expect(await deleteBatchAction("invalid")).toMatchObject({
+      ok: false,
+      code: 400,
+    });
+    expect(f.remove).not.toHaveBeenCalled();
+  });
+
+  it("lets ordinary staff delete the batch and refresh affected pages", async () => {
+    const f = deletionFixture();
+    expect(await deleteBatchAction(applicantId)).toEqual({
+      ok: true,
+      data: null,
+    });
+    expect(f.eq).toHaveBeenCalledWith("id", applicantId);
+    for (const path of [
+      "/batches",
+      `/batches/${applicantId}`,
+      "/voters",
+      "/batch/volunteer-token",
+    ]) {
+      expect(mocks.revalidate).toHaveBeenCalledWith(path);
+    }
+    expect(mocks.admin).not.toHaveBeenCalled();
+  });
+
+  it("redirects to the list after deletion from the detail page", async () => {
+    deletionFixture();
+    await expect(deleteBatchAction(applicantId, true)).rejects.toThrow(
+      "REDIRECT:/batches",
+    );
+  });
+
+  it("reports missing batches without redirecting or refreshing", async () => {
+    deletionFixture(null);
+    expect(await deleteBatchAction(applicantId, true)).toMatchObject({
+      ok: false,
+      code: 404,
+    });
+    expect(mocks.redirect).not.toHaveBeenCalled();
+    expect(mocks.revalidate).not.toHaveBeenCalled();
+  });
+
+  it("reports database errors without refreshing", async () => {
+    deletionFixture(null, new Error("DB failure"));
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      expect(await deleteBatchAction(applicantId)).toMatchObject({
+        ok: false,
+        code: 500,
+      });
+      expect(mocks.revalidate).not.toHaveBeenCalled();
+    } finally {
+      log.mockRestore();
+    }
+  });
+});
+
+describe("voter removal", () => {
+  it("blocks signed-out and unapproved accounts before deleting", async () => {
+    sessionFixture({ signedIn: false });
+    expect(await removeVotersAction([applicantId])).toMatchObject({
+      ok: false,
+      code: 401,
+    });
+    sessionFixture({ approved: false });
+    expect(await removeVotersAction([applicantId])).toMatchObject({
+      ok: false,
+      code: 403,
+    });
+  });
+  it("rejects empty, malformed, and oversized selections", async () => {
+    for (const ids of [[], ["invalid"], Array(10001).fill(applicantId)]) {
+      expect(await removeVotersAction(ids)).toMatchObject({
+        ok: false,
+        code: 400,
+      });
+    }
+    expect(mocks.revalidate).not.toHaveBeenCalled();
+  });
+  it("lets ordinary staff remove a selection and refreshes affected pages", async () => {
+    const f = sessionFixture({ id: applicantId });
+    const rpc = vi.fn().mockResolvedValue({ data: 2, error: null });
+    Object.assign(f.db, { rpc });
+    expect(await removeVotersAction([ownerId, applicantId, ownerId])).toEqual({
+      ok: true,
+      data: { count: 2 },
+    });
+    expect(rpc).toHaveBeenCalledWith("remove_voters", {
+      p_voter_ids: [ownerId, applicantId],
+    });
+    expect(mocks.admin).not.toHaveBeenCalled();
+    expect(mocks.revalidate).toHaveBeenCalledWith("/voters");
+    expect(mocks.revalidate).toHaveBeenCalledWith("/batches");
+    expect(mocks.revalidate).toHaveBeenCalledWith("/batches/[id]", "page");
+    expect(mocks.revalidate).toHaveBeenCalledWith("/batch/[token]", "page");
+  });
+  it("reports database failures without reporting removal or refreshing", async () => {
+    const f = sessionFixture();
+    Object.assign(f.db, {
+      rpc: vi
+        .fn()
+        .mockResolvedValue({ data: null, error: new Error("DB failure") }),
+    });
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      expect(await removeVotersAction([applicantId])).toMatchObject({
+        ok: false,
+        code: 500,
+      });
+      expect(mocks.revalidate).not.toHaveBeenCalled();
+    } finally {
+      log.mockRestore();
+    }
   });
 });
 
