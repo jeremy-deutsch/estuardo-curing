@@ -1,0 +1,315 @@
+.appShell {
+  display: flex;
+  min-height: 100vh;
+}
+.sidebar {
+  width: 224px;
+  position: fixed;
+  inset: 0 auto 0 0;
+  border-right: 1px solid var(--line);
+  background: #fcfdf9;
+  display: flex;
+  flex-direction: column;
+  padding: 30px 20px 18px;
+  z-index: 40;
+}
+.sidebar > .brand {
+  margin-left: 9px;
+  margin-bottom: 31px;
+}
+.workspaceLabel {
+  padding: 12px 0 19px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 600;
+}
+.workspaceLabel small {
+  font-size: 12px;
+  display: block;
+  color: var(--muted);
+  margin-top: 5px;
+  font-weight: 400;
+}
+.workspaceAvatar {
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  color: #677a51;
+  background: #e9efdb;
+  border: 1px solid #dae2cc;
+  border-radius: 7px;
+  font-size: 10px;
+  letter-spacing: 0.4px;
+}
+.workspaceLabel > .liveDot {
+  margin-left: auto;
+}
+.navLabel {
+  color: #9a9f94;
+  font-size: 11px;
+  letter-spacing: 1.4px;
+  margin: 28px 10px 10px;
+}
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  font-size: 15px;
+  padding: 12px 13px;
+  border-radius: 7px;
+  margin: 5px 0;
+  color: #788075;
+}
+.navItem > svg {
+  font-size: 14px;
+  width: 16px;
+}
+.navItem.active {
+  background: #eaf0e1;
+  color: #375438;
+  font-weight: 600;
+}
+.navItem:hover {
+  background: #f0f3ea;
+}
+.navActiveDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #68834c;
+  margin-left: auto;
+}
+.sidebarBottom {
+  margin-top: auto;
+  padding-top: 35px;
+}
+.sidebarNote {
+  border: 1px solid #e1e8d6;
+  background: #f3f6ec;
+  padding: 17px 13px 15px;
+  border-radius: 9px;
+  margin-bottom: 23px;
+}
+.noteSymbol {
+  font-size: 27px;
+  color: #889b64;
+  display: block;
+  margin-bottom: 14px;
+}
+.sidebarNote strong {
+  display: block;
+  font-size: 13px;
+  color: #455a37;
+  margin-bottom: 7px;
+}
+.sidebarNote p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #8a927c;
+}
+.staffAccount {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 19px;
+  min-width: 0;
+}
+.accountAvatar {
+  border-radius: 50%;
+  background: #eaece3;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  color: #6d775f;
+  flex-shrink: 0;
+}
+.staffAccount > div {
+  min-width: 0;
+  flex: 1;
+}
+.staffAccount strong {
+  font-size: 12px;
+  display: block;
+  margin-bottom: 5px;
+}
+.staffAccount small {
+  display: block;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #91978a;
+}
+.staffAccount .iconButton {
+  width: 24px;
+}
+.mainColumn {
+  margin-left: 224px;
+  width: calc(100% - 224px);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.topbar {
+  height: 70px;
+  border-bottom: 1px solid var(--line);
+  padding: 0 38px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  font-size: 13px;
+  color: #596a59;
+}
+.breadcrumb {
+  color: #92998d;
+}
+.slash {
+  color: #c6ccbf;
+  margin: 0 15px;
+}
+.mainContent {
+  padding: 37px 38px 25px;
+  max-width: 1800px;
+  width: 100%;
+  margin: 0 auto;
+  flex: 1;
+}
+.appFooter {
+  padding: 18px 38px 22px;
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  color: #a4aa9b;
+  font-size: 11px;
+}
+
+@media (min-width: 1600px) {
+  .sidebar {
+    width: 244px;
+    padding-left: 25px;
+    padding-right: 25px;
+  }
+  .mainColumn {
+    margin-left: 244px;
+    width: calc(100% - 244px);
+  }
+  .mainContent {
+    padding: 40px 45px;
+  }
+  .topbar {
+    padding: 0 45px;
+  }
+}
+@media (max-width: 1200px) {
+  .sidebar {
+    width: 200px;
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+  .mainColumn {
+    margin-left: 200px;
+    width: calc(100% - 200px);
+  }
+  .mainContent {
+    padding: 28px 24px;
+  }
+  .topbar {
+    padding: 0 24px;
+  }
+}
+@media (max-width: 700px) {
+  .sidebar {
+    position: sticky;
+    top: 0;
+    inset-inline: 0;
+    width: 100%;
+    height: 68px;
+    flex-direction: row;
+    align-items: center;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--line);
+    border-right: 0;
+    gap: 8px;
+  }
+  .sidebar > .brand {
+    margin: 0;
+    font-size: 25px;
+    gap: 6px;
+  }
+  .sidebar .brandMark {
+    width: 27px;
+    height: 27px;
+    font-size: 20px;
+    line-height: 23px;
+    border-radius: 7px;
+  }
+  .sidebar .brandMark > span {
+    font-size: 14px;
+  }
+  .sidebar .workspaceLabel,
+  .sidebar .navLabel,
+  .sidebar .sidebarNote,
+  .sidebar .staffAccount > div,
+  .sidebar .accountAvatar {
+    display: none;
+  }
+  .sidebar nav {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    margin-left: auto;
+  }
+  .navItem {
+    padding: 8px 7px;
+    font-size: 12px;
+    gap: 6px;
+    margin: 0;
+  }
+  .navItem > svg {
+    font-size: 12px;
+    width: 13px;
+  }
+  .navActiveDot {
+    display: none;
+  }
+  .sidebarBottom {
+    padding: 0;
+    margin: 0;
+  }
+  .staffAccount {
+    padding: 0;
+    border: 0;
+  }
+  .staffAccount .iconButton {
+    width: 22px;
+  }
+  .appShell {
+    display: block;
+  }
+  .mainColumn {
+    margin: 0;
+    width: 100%;
+    min-height: calc(100vh - 68px);
+  }
+  .topbar {
+    height: 47px;
+    padding: 0 20px;
+    font-size: 12px;
+  }
+  .mainContent {
+    padding: 27px 18px 15px;
+  }
+  .appFooter {
+    padding: 17px 20px;
+    font-size: 10px;
+    gap: 10px;
+  }
+}

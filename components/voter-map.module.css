@@ -1,0 +1,189 @@
+.mapPanel {
+  position: relative;
+  min-height: 500px;
+  isolation: isolate;
+  background: #eef0e8;
+}
+.mapCanvas {
+  height: 100%;
+  min-height: 500px;
+  width: 100%;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.mapPanel.selecting .mapCanvas {
+  cursor: crosshair;
+}
+.mapCanvas:global(.leaflet-container) {
+  background: #edf0e5 !important;
+}
+.mapCanvas :global(.leaflet-control-zoom) {
+  border: 1px solid #d8dfd1 !important;
+  box-shadow: 0 1px 4px #2b3d1c12 !important;
+}
+.mapCanvas :global(.leaflet-control-zoom a) {
+  color: #53624a !important;
+  font-size: 17px !important;
+  width: 28px !important;
+  height: 28px !important;
+  line-height: 28px !important;
+}
+.mapCanvas :global(.leaflet-top.leaflet-left) {
+  top: 55px;
+  left: 7px;
+}
+.mapCanvas :global(.leaflet-control-attribution) {
+  font-size: 10px !important;
+  max-width: 100%;
+}
+.mapTopControls {
+  position: absolute;
+  z-index: 5;
+  top: 17px;
+  left: 17px;
+  right: 17px;
+  display: flex;
+  justify-content: space-between;
+  gap: 7px;
+  pointer-events: none;
+}
+.mapTopControls .button {
+  pointer-events: auto;
+  font-size: 12px;
+  border-color: #d9e0d0;
+  box-shadow: 0 1px 4px #213c1b0a;
+}
+.mapTopControls .button:last-child {
+  margin-left: auto;
+}
+.voterMarkerWrap {
+  background: none;
+  border: 0;
+}
+.voterMarker {
+  width: 24px;
+  height: 24px;
+  border: 3px solid white;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 1px 4px #1d34294a;
+}
+.voterMarker.selected {
+  outline: 3px solid #88ad69;
+  transform: scale(1.15);
+}
+.mapLegend {
+  position: absolute;
+  bottom: 28px;
+  left: 15px;
+  right: 15px;
+  z-index: 5;
+  background: #fffffff2;
+  border: 1px solid #e0e5d8;
+  border-radius: 6px;
+  padding: 9px 11px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  box-shadow: 0 1px 5px #24381c07;
+}
+.mapLegend span {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 10px;
+  color: #869079;
+  white-space: nowrap;
+}
+.mapLegend i {
+  width: 6px;
+  height: 6px;
+  display: inline-block;
+  border-radius: 50%;
+}
+.mapEmpty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid #d9e0d0;
+  padding: 13px 17px;
+  background: #fffffff0;
+  border-radius: 7px;
+  z-index: 4;
+  font-size: 13px;
+  color: #7c8b70;
+  text-align: center;
+  min-width: 215px;
+}
+.mapError {
+  position: absolute;
+  left: 15px;
+  right: 15px;
+  top: 100px;
+  padding: 10px;
+  z-index: 5;
+  background: #fff7e6;
+  color: #8e6a2c;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.mapPopup {
+  font-size: 14px;
+  max-height: 220px;
+  overflow: auto;
+  min-width: 150px;
+}
+.mapPopup > div + div {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #e1e6db;
+}
+.mapPopup p {
+  font-size: 13px;
+  margin: 5px 0 !important;
+}
+.mapPopup small {
+  font-size: 12px;
+  color: #849073;
+}
+.mapSelectButton {
+  display: block;
+  border: 1px solid #d4dec8;
+  background: #f1f6eb;
+  color: #39572e;
+  border-radius: 4px;
+  font-size: 12px;
+  padding: 6px 10px;
+  margin-top: 8px;
+}
+
+@media (min-width: 1600px) {
+  .mapPanel,
+  .mapCanvas {
+    min-height: 610px;
+  }
+}
+@media (max-width: 1000px) {
+  .mapLegend {
+    width: max-content;
+    max-width: calc(100% - 30px);
+    right: auto;
+  }
+}
+@media (max-width: 700px) {
+  .mapPanel,
+  .mapCanvas {
+    min-height: 420px;
+  }
+  .mapTopControls .button {
+    font-size: 11px;
+  }
+}

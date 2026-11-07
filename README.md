@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+﻿# Cure · Ballot operations
 
-## Getting Started
+A Next.js 16 / React 19 application backed by Supabase Auth, Postgres, and PostGIS. One Supabase project represents one campaign. Existing sample voter files are never automatically uploaded or exposed publicly.
 
-First, run the development server:
+## Architecture
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+App Router Server Components load voter workspaces, batch details, upload history/reports, and public batches directly through the server-only data layer in `lib/data.ts`. Staff reads verify the current Supabase session and `staff_members` membership; row-level security independently protects database access. The session check is memoized within a render, without caching authorization or voter data across requests. Loading and error boundaries handle server-rendered pages.
+
+Client components receive the loaded data as props and keep interaction state such as filters, selections, dialogs, and live upload progress. They do not fetch initial screen data after hydration. Batch details query their own members instead of loading the complete workspace. Dates use Pacific time and counts use an explicit English locale so server and browser markup match.
+
+Server Functions in `app/actions/` handle login/logout, batch assignment and editing, upload creation, and voter status changes. Every function validates inputs and enforces staff access or the database's public-token permission check. Expected errors return typed results. Successful mutations revalidate affected pages so fresh server props reach the UI; refresh buttons use the Next.js router. Login/logout forms use `useActionState` with server redirects.
+
+The one retained HTTP endpoint is `/api/imports/[id]`: GET reads job progress and POST processes another resumable chunk. Upload creation itself is a Server Function. Its request-body limit is 6 MB to accommodate multipart overhead while preserving the 5 MB file limit. Chunk processing still depends on an open browser; it is not a background worker.
+
+## Run locally
+
+1. Install dependencies with `pnpm install` (Node 22+).
+2. Copy `.env.example` to `.env`, or retain your existing `.env`. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from your Supabase project. A legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY` is also supported.
+3. Apply `supabase/migrations/202611070001_ballot_operations.sql` in the **Supabase SQL editor**, or set `POSTGRES_SESSION_POOLER_URL` (or `POSTGRES_URL`) and run `pnpm db:migrate`. This first migration creates new tables; it intentionally refuses to overwrite existing application tables. `pnpm db:check` checks whether the schema is installed.
+4. Create staff users in **Supabase → Authentication → Users**, with an email and password. Add their user IDs to the staff allowlist using the SQL editor:
+
+   ```sql
+   insert into public.staff_members (user_id)
+   values ('THE-AUTH-USER-UUID');
+   ```
+
+5. Run `pnpm dev` and open `http://localhost:3000`. `/` opens the protected voter workspace; signed-out visitors are sent to `/login`.
+
+If `db.YOUR_PROJECT.supabase.co` does not resolve or your network cannot reach an IPv6-only direct database endpoint, copy the **Session pooler** connection string from Supabase's Connect dialog into `POSTGRES_SESSION_POOLER_URL`. The SQL editor also works without a local database connection. Never put database passwords or Supabase secret/service-role keys in `NEXT_PUBLIC_*` variables. The application itself uses the publishable key and authenticated sessions; it does not need a service-role key.
+
+## Staff workflow
+
+- **`/login`**: email/password authentication. Both a verified Supabase session and explicit `staff_members` membership are required. There is no public staff signup. Revoke membership by deleting its allowlist row.
+- **`/uploads`**: CSV and XLSX uploads, reports, failed-row downloads, and resumable processing. Limits: 5 MB and 10,000 data rows per file. XLSX reads the first worksheet. The supplied CSV and Excel exports each contain 122 supported rows. Report links use `/uploads?import=[id]` and load the report on the server.
+- **`/voters`**: map, searchable/paginated table, status and ZIP filters, and an unassigned-only filter. Click a marker to select a voter; grouped markers list all voters at that coordinate. On desktop, **Select an area** lets you drag a rectangle. The table supports individual selection and selecting all filtered voters, including across pages. Selections remain when filters change; the selection count includes hidden selections.
+- **`/batches`**: rename batches, copy links, inspect contents, and enable/disable public access. Select voters in the workspace to create a door-knocking or phone-calling batch, or add them to an existing active batch. Assignment is transactional and repeated assignment is harmless.
+- **`/batches/[id]`**: staff batch details and a link to the volunteer view. Staff can inspect disabled batches, but status changes require an active link.
+
+## Upload format and geocoding
+
+Use these template headers:
+
+```csv
+first_name,last_name,street,unit,city,state,zip,phone
+Alex,Example,4600 Silver Hill Rd,,Suitland,MD,20746,
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The PDI headers `V1_FIRSTNAME`, `V1_LASTNAME`, `RES_ADDRESS1`, `RES_ADDRESS2`, `RA_ZIP`, and `WIRELESSPHONENUMBER` are recognized. A locality such as `Los Angeles, CA 90011` in `RES_ADDRESS2` is extracted into city, state, and ZIP; ordinary unit values remain part of the address. Phone numbers are optional and normalize to `+1` plus ten digits. Invalid phone numbers are reported as failed rows rather than silently discarded.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Identity is first + last name and complete address (street, unit, city, state, ZIP), ignoring case, whitespace, and punctuation. A database-generated unique key prevents duplicates even during concurrent imports. Unicode letters are preserved. Address abbreviations, alternate spellings, and differently placed apartment information are not fuzzy-matched. Existing records, phone numbers, and statuses are preserved when duplicate rows are skipped. Duplicate rows are reported separately from failures.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Uploads are persisted before geocoding. The browser drives resumable chunks of 100 using the [US Census batch geocoder](https://geocoding.geo.census.gov/geocoder/Geocoding_Services_API.html). Only row identifiers and addresses are submitted; names and phone numbers are excluded. Only exact, unambiguous matches with valid coordinates are imported. Coordinates are saved in scalar columns and a generated PostGIS `geography(Point,4326)` with longitude first and a spatial index. Nonmatches/ties are failed rows; download, correct, and reupload them. Existing imported voters will be skipped on a retry.
 
-## Learn More
+The browser can pause between chunks. Navigating away may allow the current server request to finish, but subsequent chunks wait until **Resume upload** is clicked. A three-minute claim lease recovers interrupted requests. Upstream/network failures reset the chunk to pending instead of losing progress. Import histories and outcomes are durable; the last 50 uploads are shown.
 
-To learn more about Next.js, take a look at the following resources:
+Political support, party, age, gender, and other demographic fields are not imported or used for selection. The map differentiates curing statuses: uncontacted, interested, cured, no response, and not interested.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Volunteer access
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Both batch types use **`/batch/[token]`**. Separate URL structures are unnecessary: the stored batch type controls the map and directions. Door-knocking batches include both. Phone-calling batches display the same contact cards without the map. Cards include call/text links when a phone number is available.
 
-## Deploy on Vercel
+A 256-bit random bearer token grants access to the voters in that active batch. Anyone holding the link can read those voters' names, addresses, phone numbers, and statuses, and change only their curing status. Volunteers do not log in. Share links only with assigned volunteers; disable a batch to revoke its public access. Re-enabling a batch restores the same link.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Statuses are shared across all batches for a voter. Selecting the current status clears it to no status. Updates are saved immediately, recorded in `status_events`, and use optimistic concurrency: if another volunteer already changed the voter, the later save is rejected with a refresh prompt. Use **Refresh** to load other volunteers' latest updates. Links do not identify individual volunteers, so the audit records the batch and status change, not a volunteer identity.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Anonymous clients have no direct table permissions. Narrow SQL functions validate the active token and batch membership. Authenticated staff are protected by row-level security and server-side membership checks. Pages have noindex, same-origin referrer and frame restrictions; private APIs return no-store. Public RPCs use an anonymous client rather than bypassing RLS with a service key. Maps use OpenStreetMap's standard interactive tiles and require internet access. Tile requests send only the site origin as their referrer, preserving batch-token privacy while complying with the [tile usage policy](https://operations.osmfoundation.org/policies/tiles/). Failed tiles leave the table available. For a large deployment, configure a tile provider suitable for its traffic.
+
+## Verification
+
+Storybook previews live under **Screens**: Login, Voters, Batches, Batch Detail,
+Uploads, and Volunteer Batch. Run `pnpm storybook` to open them on port 6006,
+or `pnpm build-storybook` to generate a static preview in `storybook-static`.
+Run `pnpm test:storybook` for browser rendering and interaction
+checks (install Chromium once with `pnpm exec playwright install chromium`).
+
+Stories use the app's components and styles, synthetic records in
+`stories/fixtures.ts`, and the staff shell where appropriate. Storybook-only Vite
+aliases replace server actions and import API requests with mocks in
+`.storybook/mocks`; no Supabase configuration is needed. Mock writes reset for
+each story and do not persist data or reload server-provided props. Maps still
+use live OpenStreetMap tiles and need internet access; map animations are disabled
+in previews to keep story changes stable. The stories include empty
+lists, upload reports, disabled batches, and interactive error and success states.
+
+```sh
+pnpm typecheck
+pnpm test
+pnpm build
+# With the app running in another terminal:
+pnpm test:smoke
+# After schema setup, with an administrator pooler connection:
+pnpm test:db
+```
+
+Unit tests cover both sample exports, field normalization, duplicate detection, Unicode identities, malformed inputs, CSV quoting, geocoder response handling, and address-only Census submissions. Database integration checks use temporary synthetic fixtures inside a rolled-back transaction, testing PostGIS, anonymous table denial, staff RLS, batch scoping, status conflicts and clearing, revocation, and audit history. They also test import outcomes, lease recovery, retry idempotency, and batch assignment. They require a migrated, reachable database and never commit fixture data.
+
+Deploy as a server-backed Next.js application with the two public Supabase environment values configured. Upload processing uses Node route handlers with a 120-second duration budget; choose a host that permits it. The Census request itself has a 65-second timeout. A static export cannot support authentication or uploads.

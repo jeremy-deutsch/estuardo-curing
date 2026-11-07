@@ -1,0 +1,49 @@
+"use server";
+import { z } from "zod";
+import { revalidatePath } from "next/cache";
+import { actionResult } from "@/lib/action-result";
+import { HttpError } from "@/lib/auth";
+import { publicClient } from "@/lib/supabase/server";
+import type { VoterStatus } from "@/lib/types";
+
+export async function setVoterStatusAction(
+  batchToken: string,
+  input: { voter_id: string; status: VoterStatus; updated_at: string },
+) {
+  return actionResult(async () => {
+    const token = z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .parse(batchToken);
+    const body = z
+      .object({
+        voter_id: z.uuid(),
+        status: z
+          .enum(["cured", "interested", "not_interested", "no_response"])
+          .nullable(),
+        updated_at: z.iso.datetime({ offset: true }),
+      })
+      .parse(input);
+    // The database verifies the bearer token, active batch, membership, and
+    // expected timestamp atomically. No service-role client is used here.
+    const { data, error } = await publicClient().rpc("set_public_status", {
+      p_token: token,
+      p_voter_id: body.voter_id,
+      p_status: body.status,
+      p_expected_updated_at: body.updated_at,
+    });
+    if (error) throw error;
+    if (data?.error === "conflict")
+      throw new HttpError(
+        "Someone updated this voter. Refresh the batch before making another change.",
+        409,
+      );
+    if (!data || data.error)
+      throw new HttpError("This batch or voter is unavailable.", 404);
+    revalidatePath(`/batch/${token}`);
+    revalidatePath("/batches/[id]", "page");
+    revalidatePath("/voters");
+    revalidatePath("/batches");
+    return data as { status: VoterStatus; updated_at: string };
+  });
+}

@@ -1,0 +1,424 @@
+.publicPage {
+  min-height: 100vh;
+  max-width: 100%;
+  background: #f7f9f3;
+}
+.publicHeader {
+  height: 85px;
+  max-width: 1040px;
+  margin: auto;
+  padding: 0 35px;
+  border-bottom: 1px solid #e4eadb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.publicContent {
+  max-width: 1040px;
+  margin: auto;
+  padding: 38px 35px 50px;
+}
+.publicIntro {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 26px;
+}
+.publicIntro h1 {
+  font-size: 34px;
+  margin-bottom: 12px;
+  overflow-wrap: anywhere;
+}
+.publicIntro .muted {
+  font-size: 14px;
+}
+.publicIntro .eyebrow {
+  font-size: 11px;
+}
+.publicProgress {
+  border: 1px solid #dfe8d2;
+  background: #eff5e5;
+  padding: 19px 22px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  margin-bottom: 23px;
+}
+.publicProgress > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.publicProgress strong {
+  font-size: 15px;
+  color: #5c7747;
+  display: block;
+}
+.publicProgress small {
+  font-size: 12px;
+  color: #9aab87;
+  display: block;
+  margin-top: 6px;
+}
+.progressTrack {
+  height: 5px;
+  background: #e0e9d4;
+  max-width: 200px;
+  flex: 1;
+  border-radius: 5px;
+  margin-left: auto;
+  overflow: hidden;
+}
+.progressTrack i {
+  display: block;
+  height: 100%;
+  background: #8eaf6c;
+}
+.publicContent > .mapPanel,
+.embeddedBatch .mapPanel {
+  min-height: 330px;
+  border: 1px solid #e2e9d6;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+.publicContent > .mapPanel .mapCanvas,
+.embeddedBatch .mapCanvas {
+  min-height: 330px;
+}
+.volunteerInstructions {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 23px 0 30px;
+  font-size: 13px;
+  color: #8a977b;
+}
+.volunteerInstructions > svg {
+  margin-top: 4px;
+  color: #a3b78b;
+}
+.volunteerInstructions strong {
+  color: #71875b;
+  font-weight: 500;
+}
+.saveAnnouncement {
+  font-size: 12px;
+  min-height: 20px;
+  color: #9ba68e;
+  margin-bottom: 13px;
+}
+.voterCards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 17px;
+}
+.voterCard {
+  background: #fff;
+  border: 1px solid #e3e9db;
+  border-radius: 10px;
+  padding: 21px 20px;
+  min-width: 0;
+}
+.voterCard.cardCured {
+  border-color: #d2e2be;
+  background: #fdfefb;
+}
+.cardPerson {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  position: relative;
+}
+.cardNumber {
+  border: 1px solid #e5ebdb;
+  background: #f6f9f1;
+  display: grid;
+  place-items: center;
+  min-width: 25px;
+  height: 25px;
+  font-size: 12px;
+  color: #a1b18c;
+  border-radius: 6px;
+  margin-top: 1px;
+}
+.cardPerson > div {
+  min-width: 0;
+  flex: 1;
+}
+.cardPerson h3 {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 3px 0 9px;
+  overflow-wrap: anywhere;
+}
+.cardPerson p {
+  font-size: 13px;
+  color: #91a07e;
+  line-height: 1.7;
+}
+.cardPerson .cardPhone {
+  font-size: 12px;
+  margin-top: 8px;
+  color: #a3ad95;
+}
+.cardPerson > .statusChip {
+  font-size: 10px;
+  position: absolute;
+  top: -5px;
+  right: -6px;
+  max-width: 110px;
+}
+.cardPerson:has(> .statusChip) h3 {
+  padding-right: 60px;
+}
+.contactLinks {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 18px 0 17px;
+  padding-left: 36px;
+  flex-wrap: wrap;
+}
+.contactLinks .button {
+  font-size: 12px;
+  color: #6a8151;
+  padding: 7px 9px;
+  min-height: 30px;
+}
+.statusControls {
+  border-top: 1px solid #ecf0e5;
+  padding-top: 15px;
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.statusOption {
+  font-size: 11px;
+  border: 1px solid #e5eadc;
+  border-radius: 5px;
+  padding: 8px 8px;
+  min-height: 31px;
+  color: #98a28c;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  background: #fff;
+  flex: 1;
+  justify-content: center;
+  white-space: nowrap;
+}
+.statusOption:hover:not(:disabled) {
+  background: #f5f8ef;
+}
+.statusOption.chosen {
+  border-color: #aebf98;
+  background: #f1f6e9;
+  color: #6c8b4f;
+}
+.statusOption.interested.chosen {
+  background: #f4effa;
+  color: #9175ac;
+  border-color: #d7c8e7;
+}
+.statusOption.no_response.chosen {
+  background: #faf5e7;
+  color: #ac9152;
+  border-color: #e8dcb9;
+}
+.statusOption.not_interested.chosen {
+  background: #f1f4f3;
+  color: #828e89;
+  border-color: #d6dfda;
+}
+.voterCard .alert {
+  font-size: 12px;
+  margin: 12px 0 0;
+  padding: 10px;
+}
+.voterCard > .smallText {
+  margin-top: 10px;
+  font-size: 12px;
+}
+.publicFooter {
+  max-width: 970px;
+  padding: 22px 0 30px;
+  margin: auto;
+  border-top: 1px solid #e2e9d8;
+  font-size: 12px;
+  color: #a4af97;
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+}
+.publicToolbar select {
+  min-height: 36px;
+  font-size: 13px;
+  padding: 8px 22px 8px 10px;
+  border-color: #e2e7dc;
+}
+.publicToolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 15px 0;
+}
+.publicToolbar h2 {
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  font-size: 17px;
+}
+.publicToolbar .searchField {
+  max-width: 255px;
+  flex: 1;
+}
+.publicToolbar select {
+  max-width: 160px;
+}
+@media (max-width: 1000px) {
+  .publicContent {
+    padding-left: 25px;
+    padding-right: 25px;
+  }
+  .voterCards {
+    grid-template-columns: 1fr;
+  }
+  .cardPerson > .statusChip {
+    position: static;
+    font-size: 11px;
+  }
+  .cardPerson h3 {
+    padding-right: 0 !important;
+  }
+  .statusOption {
+    font-size: 12px;
+    padding: 9px;
+  }
+  .contactLinks .button {
+    font-size: 13px;
+  }
+}
+@media (max-width: 700px) {
+  .publicHeader {
+    padding: 0 20px;
+    height: 74px;
+  }
+  .publicHeader .brand {
+    font-size: 28px;
+  }
+  .publicHeader .brandMark {
+    width: 29px;
+    height: 29px;
+    font-size: 22px;
+  }
+  .publicContent {
+    padding: 29px 18px 35px;
+  }
+  .publicIntro h1 {
+    font-size: 28px;
+    line-height: 1.2;
+  }
+  .publicIntro {
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .publicIntro .button {
+    font-size: 11px;
+    min-height: 30px;
+    margin-top: 18px;
+  }
+  .publicIntro .muted {
+    font-size: 13px;
+  }
+  .publicIntro .eyebrow {
+    font-size: 10px;
+  }
+  .publicProgress {
+    padding: 16px;
+    gap: 15px;
+  }
+  .publicProgress strong {
+    font-size: 13px;
+  }
+  .publicProgress small {
+    font-size: 11px;
+  }
+  .publicProgress .featureIcon {
+    height: 32px;
+    width: 32px;
+  }
+  .progressTrack {
+    max-width: 90px;
+  }
+  .publicProgress > div:first-child {
+    gap: 10px;
+  }
+  .volunteerInstructions {
+    font-size: 12px;
+    line-height: 1.8;
+  }
+  .publicContent > .mapPanel,
+  .publicContent > .mapPanel .mapCanvas {
+    min-height: 285px;
+  }
+  .voterCard {
+    padding: 18px 15px;
+  }
+  .cardPerson {
+    gap: 8px;
+  }
+  .cardPerson h3 {
+    font-size: 15px;
+  }
+  .cardPerson > .statusChip {
+    font-size: 10px;
+  }
+  .cardPerson .cardNumber {
+    min-width: 23px;
+    height: 23px;
+    font-size: 11px;
+  }
+  .contactLinks {
+    padding-left: 31px;
+  }
+  .statusOption {
+    font-size: 11px;
+    padding: 8px 5px;
+    gap: 4px;
+  }
+  .saveAnnouncement {
+    font-size: 11px;
+  }
+  .publicFooter {
+    padding: 20px;
+    margin: 0 18px;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 11px;
+  }
+  .embeddedBatch .publicIntro h1 {
+    font-size: 26px;
+  }
+  .publicToolbar {
+    flex-wrap: wrap;
+    gap: 9px;
+  }
+  .publicToolbar h2 {
+    width: 100%;
+    font-size: 16px;
+    margin-bottom: 7px;
+  }
+  .publicToolbar .searchField {
+    flex: 1;
+    max-width: none;
+  }
+  .publicToolbar select {
+    font-size: 12px;
+    max-width: 135px;
+  }
+}

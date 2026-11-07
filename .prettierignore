@@ -1,0 +1,6 @@
+.next
+node_modules
+.pnpm-store
+data
+pnpm-lock.yaml
+public

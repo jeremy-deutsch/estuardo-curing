@@ -1,0 +1,333 @@
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 15px;
+  margin-bottom: 31px;
+}
+.stat {
+  padding: 18px 19px 17px;
+  border: 1px solid var(--line);
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.stat > span {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #7f8a7b;
+}
+.stat > span > svg {
+  font-size: 13px;
+  color: #819279;
+}
+.stat > strong {
+  display: block;
+  font-size: 31px;
+  letter-spacing: -1.2px;
+  color: #304a39;
+  font-weight: 500;
+  margin: 13px 0 8px;
+  line-height: 1;
+}
+.stat small {
+  color: #9aa18f;
+  font-size: 12px;
+}
+.stat.statCured {
+  background: #edf3e5;
+  border-color: #dce6d0;
+}
+.stat.statCured > span {
+  color: #60784b;
+}
+.stat.statCured small {
+  color: #7d9566;
+}
+.statUnit {
+  font-size: 15px;
+  color: #9cae89;
+  letter-spacing: 0;
+  margin-left: 4px;
+}
+.statDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.statDot.blue {
+  background: #67879a;
+}
+.statDot.purple {
+  background: #a28bb9;
+}
+.voterWorkspace {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.viewSwitch {
+  display: flex;
+  gap: 3px;
+  border: 1px solid var(--line);
+  padding: 3px;
+  background: #f8f9f6;
+  border-radius: 7px;
+}
+.viewSwitch button {
+  border: 0;
+  background: transparent;
+  padding: 7px 9px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #929889;
+  border-radius: 4px;
+}
+.viewSwitch button.active {
+  background: white;
+  color: #4b6242;
+  box-shadow: 0 1px 4px #26341a12;
+}
+.checkboxFilter {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  font-size: 12px;
+  color: #7b8773;
+  margin-left: auto;
+  font-weight: 400;
+}
+.selectionBar {
+  padding: 11px 21px;
+  border-top: 1px solid var(--line);
+  background: #fafbf7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 55px;
+}
+.selectionBar > span {
+  font-size: 13px;
+  color: #87917e;
+}
+.selectionBar > span > strong {
+  color: #45623c;
+}
+.selectionBar .textButton {
+  font-size: 12px;
+  margin-left: 12px;
+}
+.miniCheck {
+  border: 1px solid #d4ddc6;
+  width: 13px;
+  height: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  font-size: 11px;
+  margin-right: 8px;
+  color: #a5b792;
+}
+.selectionBar .button {
+  font-size: 12px;
+  padding: 7px 11px;
+  min-height: 29px;
+}
+.voterViews {
+  display: grid;
+  min-width: 0;
+  min-height: 500px;
+  border-top: 1px solid var(--line);
+}
+.viewSplit {
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.98fr);
+}
+.viewTable,
+.viewMap {
+  grid-template-columns: 1fr;
+}
+.voterTableWrap {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--line);
+}
+.viewTable .voterTableWrap {
+  border-left: 0;
+}
+.checkboxCell {
+  width: 38px;
+  padding-right: 3px;
+  padding-left: 18px;
+}
+.rowSelected {
+  background: #f0f5e9;
+}
+.voterTable td {
+  padding-top: 15px;
+  padding-bottom: 15px;
+}
+.voterTable th:last-child,
+.voterTable td:last-child {
+  padding-left: 9px;
+  padding-right: 12px;
+}
+
+@media (min-width: 1600px) {
+  .voterViews {
+    min-height: 610px;
+  }
+  .voterTable td {
+    padding-top: 19px;
+    padding-bottom: 19px;
+  }
+}
+@media (max-width: 1200px) {
+  .stat {
+    padding: 16px 13px;
+  }
+  .stat small {
+    font-size: 11px;
+  }
+  .stat > span {
+    font-size: 12px;
+  }
+  .statsGrid {
+    gap: 10px;
+  }
+  .viewSplit {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 1fr);
+  }
+  .checkboxFilter {
+    margin-left: 0;
+  }
+  .viewSplit .statusChip {
+    font-size: 10px;
+  }
+  .voterTable td,
+  .voterTable th {
+    padding-left: 12px;
+  }
+  .voterTable .checkboxCell {
+    padding-left: 12px;
+    width: 30px;
+  }
+  .viewSplit .voterTable td strong {
+    font-size: 13px;
+  }
+  .viewSplit .voterTable small {
+    font-size: 11px;
+  }
+}
+@media (max-width: 1000px) {
+  .viewSplit {
+    grid-template-columns: 1fr;
+  }
+  .viewSplit .mapPanel,
+  .viewSplit .mapCanvas {
+    min-height: 350px;
+  }
+  .viewSplit .voterTableWrap {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+  .statsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .stat small {
+    font-size: 12px;
+  }
+  .stat > span {
+    font-size: 13px;
+  }
+  .stat > strong {
+    font-size: 30px;
+  }
+  .filterBar .checkboxFilter {
+    margin-left: auto;
+  }
+}
+@media (max-width: 700px) {
+  .statsGrid {
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+  .stat {
+    padding: 15px;
+  }
+  .stat > span {
+    font-size: 12px;
+  }
+  .stat small {
+    font-size: 10px;
+  }
+  .stat > strong {
+    font-size: 28px;
+    margin-top: 13px;
+  }
+  .viewSwitch button {
+    padding: 6px 7px;
+  }
+  .viewSwitch button > span {
+    display: none;
+  }
+  .viewSwitch svg {
+    font-size: 13px;
+  }
+  .checkboxFilter input {
+    width: 12px;
+    height: 12px;
+    min-height: 12px;
+  }
+  .selectionBar {
+    padding: 10px 14px;
+  }
+  .selectionBar > span {
+    font-size: 11px;
+  }
+  .selectionBar .button {
+    font-size: 11px;
+    min-height: 28px;
+  }
+  .viewSplit .mapPanel,
+  .viewSplit .mapCanvas {
+    min-height: 325px;
+  }
+  .voterTable td strong {
+    font-size: 14px !important;
+  }
+  .voterTable td small {
+    font-size: 12px !important;
+  }
+  .voterTable .statusChip {
+    font-size: 11px;
+  }
+  .voterTable td {
+    padding: 14px 12px;
+  }
+  .voterTable th {
+    padding: 12px;
+  }
+  .voterTable .checkboxCell {
+    width: 30px;
+    padding-left: 14px;
+    padding-right: 0;
+  }
+  .viewTable .voterTable {
+    min-width: 650px;
+  }
+  .filterBar .checkboxFilter {
+    font-size: 11px;
+    gap: 5px;
+    margin: 0;
+  }
+}

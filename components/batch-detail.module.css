@@ -1,0 +1,19 @@
+.detailNav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+  gap: 15px;
+}
+@media (max-width: 700px) {
+  .detailNav {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .detailNav > .rowActions {
+    width: 100%;
+  }
+  .detailNav .button {
+    font-size: 12px;
+  }
+}
