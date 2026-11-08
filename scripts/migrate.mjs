@@ -68,6 +68,15 @@ try {
         "utf8",
       ),
     );
+    await client.query(
+      await readFile(
+        new URL(
+          "../supabase/migrations/202611070005_staff_management_grants.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
     console.log(
       "Ballot operations schema installed. Grant staff membership as described in README.md.",
     );

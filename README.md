@@ -54,7 +54,9 @@ If email confirmation is enabled, the project's email delivery settings must sup
 
 Sign in as the configured administrator and open **Staff management** (`/staff`). All accounts without staff membership appear under **Awaiting approval**. Click **Approve as staff** to insert their account ID into `staff_members`; existing staff appear separately. The listing reads every page of Auth users. Email confirmation status is shown independently, and approval does not bypass Supabase's email confirmation requirement.
 
-Unapproved accounts stay signed in on `/pending-approval` and cannot access staff pages, data, or mutations. After approval, **Check approval status** or a new login opens the voter workspace. Approval is idempotent and does not change passwords or account metadata. Revoke access by deleting the account's `staff_members` row in the SQL editor; the account then appears as unapproved again. No schema migration is required.
+Unapproved accounts stay signed in on `/pending-approval` and cannot access staff pages, data, or mutations. After approval, **Check approval status** or a new login opens the voter workspace. Approval is idempotent and does not change passwords or account metadata. Revoke access by deleting the account's `staff_members` row in the SQL editor; the account then appears as unapproved again.
+
+If staff management reports `permission denied for table staff_members`, apply `202611070005_staff_management_grants.sql` in the SQL editor or run `pnpm db:migrate`. It explicitly grants `select, insert, update` on `public.staff_members` to `service_role` for listing and approval. The server-only secret key bypasses RLS but still needs table privileges; authenticated users retain their existing read-own-membership policy.
 
 ## Staff workflow
 

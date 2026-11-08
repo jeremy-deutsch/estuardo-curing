@@ -47,6 +47,27 @@ try {
   await db.query("insert into public.staff_members(user_id) values($1)", [
     ids.staff,
   ]);
+  await db.query("set local role service_role");
+  assert.equal(
+    (
+      await db.query(
+        "select user_id from public.staff_members where user_id = any($1::uuid[])",
+        [[ids.staff, ids.outsider]],
+      )
+    ).rowCount,
+    1,
+    "The admin client can list staff memberships",
+  );
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await db.query(
+      "insert into public.staff_members(user_id) values($1) on conflict(user_id) do update set user_id=excluded.user_id",
+      [ids.outsider],
+    );
+  }
+  await db.query("reset role");
+  await db.query("delete from public.staff_members where user_id=$1", [
+    ids.outsider,
+  ]);
   for (const [id, first] of [
     [ids.voter, "Alex"],
     [ids.otherVoter, "Robin"],
@@ -82,6 +103,7 @@ try {
     "Database collation must preserve Unicode names",
   );
   await db.query("set local role anon");
+  await denied("select * from public.staff_members");
   await denied("select * from public.voters");
   await denied("select * from public.batches");
   await denied(`delete from public.batches where id='${ids.batch}'`);
@@ -132,6 +154,15 @@ try {
   await db.query("select set_config('request.jwt.claim.sub',$1,true)", [
     ids.outsider,
   ]);
+  assert.equal(
+    (await db.query("select count(*)::int n from public.staff_members")).rows[0]
+      .n,
+    0,
+    "Unapproved accounts cannot read other accounts' staff memberships",
+  );
+  await denied(
+    `insert into public.staff_members(user_id) values('${ids.outsider}')`,
+  );
   assert.equal(
     (await db.query("select count(*)::int n from public.voters")).rows[0].n,
     0,
