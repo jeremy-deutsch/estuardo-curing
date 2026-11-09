@@ -12,7 +12,7 @@ import type {
   PublicBatch,
 } from "./types";
 export const voterColumns =
-  "id,first_name,last_name,street,unit,city,state,zip,phone,support_id,latitude,longitude,status,updated_at,created_at";
+  "id,first_name,last_name,street,unit,city,state,zip,phone,age,support_id,latitude,longitude,status,updated_at,created_at";
 export async function allRows<T>(
   db: SupabaseClient,
   table: string,

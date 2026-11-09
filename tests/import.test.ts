@@ -38,9 +38,51 @@ test("both supplied exports produce the same 122 valid records", () => {
   assert.ok(csv[0].record.phone.startsWith("+1"));
   assert.ok(!("Support ID" in csv[0].record));
   assert.equal(csv[0].record.support_id, "None");
+  assert.equal(csv[0].record.age, 18);
   assert.ok(csv.some((r) => r.record.support_id === "Strong Support"));
   assert.ok(csv.some((r) => r.record.support_id === "Lean Support"));
   assert.ok(!("V1_PARTY" in csv[0].record));
+});
+test("age accepts PDI and normalized headers, with blanks stored as unknown", () => {
+  for (const header of ["V1_AGE", "age"]) {
+    for (const value of [18, " 65 ", 0, 120]) {
+      const { record, error } = normalizeRow({ ...person, [header]: value });
+      assert.equal(error, null);
+      assert.equal(record.age, Number(value));
+    }
+  }
+  for (const value of [undefined, null, "", "   "]) {
+    const { record, error } = normalizeRow({ ...person, V1_AGE: value });
+    assert.equal(error, null);
+    assert.equal(record.age, null);
+  }
+  for (const value of ["unknown", -1, 121, "18.5", "18 years", "1e2"]) {
+    assert.match(normalizeRow({ ...person, V1_AGE: value }).error!, /Age must/);
+  }
+});
+test("duplicate file rows fill a missing age and preserve the first known age", () => {
+  for (const ages of [
+    ["", "65", "70"],
+    ["18", "", "25"],
+  ]) {
+    const csv =
+      "first_name,last_name,street,city,state,zip,V1_AGE\n" +
+      ages
+        .map(
+          (age) => `Alex,Example,4600 Silver Hill Rd,Suitland,MD,20746,${age}`,
+        )
+        .join("\n");
+    const rows = parseUpload(Buffer.from(csv), "ages.csv");
+    assert.deepEqual(
+      rows.map((row) => row.status),
+      ["pending", "duplicate", "duplicate"],
+    );
+    assert.equal(rows[0].record.age, Number(ages.find(Boolean)));
+  }
+  assert.equal(
+    dedupeKey({ ...person, age: 18 }),
+    dedupeKey({ ...person, age: 65 }),
+  );
 });
 test("Support ID is preserved with normalized headers and whitespace", () => {
   for (const header of ["Support ID", "support_id"]) {

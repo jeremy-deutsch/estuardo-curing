@@ -45,6 +45,9 @@ export function normalizeRow(raw: Record<string, unknown>): {
   ).replace(/[^\d+]/g, "");
   if (/^\d{10}$/.test(phone)) phone = `+1${phone}`;
   if (/^1\d{10}$/.test(phone)) phone = `+${phone}`;
+  const rawAge = pick("V1_AGE", "age");
+  const age =
+    /^\d{1,3}$/.test(rawAge) && Number(rawAge) <= 120 ? Number(rawAge) : null;
   const record: VoterInput = {
     first_name: pick("first_name", "firstname", "v1_firstname"),
     last_name: pick("last_name", "lastname", "v1_lastname"),
@@ -60,9 +63,12 @@ export function normalizeRow(raw: Record<string, unknown>): {
     state,
     zip,
     phone,
+    age,
     support_id: pick("support_id"),
   };
   const errors: string[] = [];
+  if (rawAge && age === null)
+    errors.push("Age must be a whole number between 0 and 120 (or blank)");
   if (!record.first_name || !record.last_name)
     errors.push("First and last name are required");
   if (!record.street) errors.push("Street address is required");
@@ -72,7 +78,9 @@ export function normalizeRow(raw: Record<string, unknown>): {
     errors.push("A valid ZIP code is required");
   if (phone && !/^\+1\d{10}$/.test(phone))
     errors.push("Phone must be a 10-digit US number (or blank)");
-  if (Object.values(record).some((v) => v.length > 250))
+  if (
+    Object.values(record).some((v) => typeof v === "string" && v.length > 250)
+  )
     errors.push("A field exceeds 250 characters");
   return { record, error: errors.length ? errors.join("; ") : null };
 }

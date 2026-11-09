@@ -77,6 +77,15 @@ try {
         "utf8",
       ),
     );
+    await client.query(
+      await readFile(
+        new URL(
+          "../supabase/migrations/202611090001_voter_age.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
     console.log(
       "Ballot operations schema installed. Grant staff membership as described in README.md.",
     );

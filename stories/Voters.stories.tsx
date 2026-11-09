@@ -18,6 +18,112 @@ type Story = StoryObj<typeof meta>;
 export const SplitView: Story = {};
 export const Empty: Story = { args: { data: emptyWorkspace } };
 
+export const AgeFilter: Story = {
+  args: {
+    data: {
+      ...workspace,
+      batches: [],
+      voters: [
+        0,
+        17,
+        18,
+        24,
+        25,
+        34,
+        35,
+        44,
+        45,
+        54,
+        55,
+        64,
+        65,
+        120,
+        null,
+        undefined,
+      ].map((age, index) => ({
+        ...workspace.voters[0],
+        id: `age-${index}`,
+        first_name: `Person ${index}`,
+        last_name: "Example",
+        age,
+      })),
+    },
+  },
+  play: async ({ canvas, userEvent }) => {
+    const filter = canvas.getByRole("button", { name: /Filter by age/ });
+    for (const [index, range] of [
+      "Under 18",
+      "18–24",
+      "25–34",
+      "35–44",
+      "45–54",
+      "55–64",
+      "65+",
+      "Unknown age",
+    ].entries()) {
+      await userEvent.click(filter);
+      await userEvent.click(
+        screen.getByRole("option", { name: range }),
+      );
+      await userEvent.keyboard("{Escape}");
+      await expect(
+        canvas.getByLabelText("Map of 2 voter locations"),
+      ).toBeVisible();
+      const checkboxes = canvas.getAllByRole("checkbox", {
+        name: /^Select Person/,
+      });
+      await expect(checkboxes).toHaveLength(2);
+      await expect(checkboxes[0]).toHaveAccessibleName(
+        `Select Person ${index * 2} Example`,
+      );
+      await expect(checkboxes[1]).toHaveAccessibleName(
+        `Select Person ${index * 2 + 1} Example`,
+      );
+      await userEvent.click(filter);
+      await userEvent.click(
+        screen.getByRole("option", { name: range }),
+      );
+      await userEvent.keyboard("{Escape}");
+    }
+    await userEvent.click(filter);
+    const ranges = ["18–24", "65+", "Unknown age"];
+    for (const range of ranges) {
+      const option = screen.getByRole("option", { name: range });
+      await userEvent.click(option);
+      await expect(option).toHaveAttribute("aria-selected", "true");
+    }
+    await expect(filter).toHaveTextContent("3 age ranges");
+    await userEvent.keyboard("{Escape}");
+    await expect(
+      canvas.getAllByRole("checkbox", { name: /^Select Person/ }),
+    ).toHaveLength(6);
+    await expect(
+      canvas.getByLabelText("Map of 6 voter locations"),
+    ).toBeVisible();
+    for (const index of [2, 3, 12, 13, 14, 15]) {
+      await expect(
+        canvas.getByRole("checkbox", {
+          name: `Select Person ${index} Example`,
+        }),
+      ).toBeVisible();
+    }
+    await userEvent.click(filter);
+    for (const range of ranges) {
+      await userEvent.click(
+        screen.getByRole("option", { name: range }),
+      );
+    }
+    await userEvent.keyboard("{Escape}");
+    await expect(filter).toHaveTextContent("All ages");
+    await expect(
+      canvas.getAllByRole("checkbox", { name: /^Select Person/ }),
+    ).toHaveLength(16);
+    await expect(
+      canvas.getByLabelText("Map of 16 voter locations"),
+    ).toBeVisible();
+  },
+};
+
 export const BatchBadges: Story = {
   play: async ({ canvas }) => {
     const row = within(canvas.getByRole("row", { name: /Morgan Patel/ }));

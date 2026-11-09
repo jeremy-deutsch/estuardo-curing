@@ -25,12 +25,17 @@ export function parseUpload(buffer: Buffer, filename: string) {
   if (!raw.length) throw new Error("The file has no data rows.");
   if (raw.length > 10_000)
     throw new Error("Split files into uploads of 10,000 rows or fewer.");
-  const seen = new Set<string>();
+  const seen = new Map<string, ReturnType<typeof normalizeRow>["record"]>();
   return raw.map((row, index) => {
     const { record, error } = normalizeRow(row);
     const identity = dedupeKey(record);
     const duplicate = !error && seen.has(identity);
-    if (!error) seen.add(identity);
+    if (!error) {
+      const first = seen.get(identity);
+      // Keep age enrichment even when a later row in this file is a duplicate.
+      if (first) first.age ??= record.age;
+      else seen.set(identity, record);
+    }
     return {
       row_number: index + 2,
       record,

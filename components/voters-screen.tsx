@@ -29,10 +29,21 @@ const viewStyles = {
   map: styles.viewMap,
 };
 
+const ageRanges = [
+  { label: "Under 18", min: 0, max: 17 },
+  { label: "18–24", min: 18, max: 24 },
+  { label: "25–34", min: 25, max: 34 },
+  { label: "35–44", min: 35, max: 44 },
+  { label: "45–54", min: 45, max: 54 },
+  { label: "55–64", min: 55, max: 64 },
+  { label: "65+", min: 65, max: 120 },
+];
+
 export function VotersScreen({ data }: { data: Workspace }) {
   const [query, setQuery] = useState("");
   const [statuses, setStatuses] = useState<string[]>([]);
   const [zip, setZip] = useState("");
+  const [ages, setAges] = useState<string[]>([]);
   const [unassigned, setUnassigned] = useState(false);
   const [supporters, setSupporters] = useState(false);
   const [view, setView] = useState<"split" | "table" | "map">("split");
@@ -90,19 +101,31 @@ export function VotersScreen({ data }: { data: Workspace }) {
   const voters = useMemo(
     () =>
       data?.voters.filter((v) => {
+        const voterAge = v.age;
+        const matchesAge =
+          !ages.length ||
+          (voterAge == null
+            ? ages.includes("unknown")
+            : ageRanges.some(
+                (range) =>
+                  ages.includes(range.label) &&
+                  voterAge >= range.min &&
+                  voterAge <= range.max,
+              ));
         const haystack =
           `${fullName(v)} ${v.street} ${v.unit} ${v.city} ${v.zip} ${v.phone}`.toLowerCase();
         return (
           haystack.includes(query.toLowerCase()) &&
           (!statuses.length || statuses.includes(v.status || "uncontacted")) &&
           (!zip || v.zip === zip) &&
+          matchesAge &&
           (!supporters ||
             v.support_id === "Strong Support" ||
             v.support_id === "Lean Support") &&
           (!unassigned || !assigned.has(v.id))
         );
       }) || [],
-    [data, query, statuses, zip, supporters, unassigned, assigned],
+    [data, query, statuses, zip, ages, supporters, unassigned, assigned],
   );
   const zips = useMemo(
     () => [...new Set(data?.voters.map((v) => v.zip))].sort(),
@@ -337,6 +360,62 @@ export function VotersScreen({ data }: { data: Workspace }) {
               <option key={z}>{z}</option>
             ))}
           </select>
+          <Select
+            aria-label="Filter by age"
+            selectionMode="multiple"
+            placeholder="All ages"
+            className={styles.statusFilter}
+            value={ages}
+            onChange={(values) => {
+              setAges(values.map(String));
+              setPage(0);
+            }}
+          >
+            <Button className={styles.statusFilterButton}>
+              <SelectValue>
+                {({ selectedItems, selectedText, isPlaceholder }) =>
+                  isPlaceholder
+                    ? "All ages"
+                    : selectedItems.length === 1
+                      ? selectedText
+                      : `${selectedItems.length} age ranges`
+                }
+              </SelectValue>
+              <span aria-hidden="true">
+                <Icon name="down" />
+              </span>
+            </Button>
+            <Popover className={styles.statusFilterPopover}>
+              <ListBox className={styles.statusFilterList}>
+                {[
+                  ...ageRanges.map((range) => ({
+                    id: range.label,
+                    label: range.label,
+                  })),
+                  { id: "unknown", label: "Unknown age" },
+                ].map(({ id, label }) => (
+                  <ListBoxItem
+                    key={id}
+                    id={id}
+                    textValue={label}
+                    className={styles.statusFilterOption}
+                  >
+                    {({ isSelected }) => (
+                      <>
+                        <span
+                          className={styles.statusFilterCheck}
+                          aria-hidden="true"
+                        >
+                          {isSelected && <Icon name="check" />}
+                        </span>
+                        {label}
+                      </>
+                    )}
+                  </ListBoxItem>
+                ))}
+              </ListBox>
+            </Popover>
+          </Select>
           <div className={styles.checkboxFilters}>
             <label className={styles.checkboxFilter}>
               <input
@@ -490,6 +569,7 @@ export function VotersScreen({ data }: { data: Workspace }) {
                         </td>
                         <td>
                           <strong>{fullName(v)}</strong>
+                          <small>Age: {v.age ?? "Unknown"}</small>
                           <small>
                             {[v.street, v.unit].filter(Boolean).join(", ")}
                           </small>

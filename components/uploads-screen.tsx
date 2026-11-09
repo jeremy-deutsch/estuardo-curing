@@ -19,6 +19,7 @@ const columns = [
   "state",
   "zip",
   "phone",
+  "age",
 ] as const;
 export function UploadsScreen({
   history,

@@ -1,6 +1,7 @@
 // All fixtures and role changes are rolled back, including on failure.
 import pg from "pg";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 try {
   process.loadEnvFile(".env");
 } catch {
@@ -38,6 +39,17 @@ async function denied(sql) {
 try {
   await db.connect();
   await db.query("begin");
+  // Exercise the age migration inside this test's rollback transaction.
+  const ageMigration = await readFile(
+    new URL(
+      "../supabase/migrations/202611090001_voter_age.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  await db.query(
+    ageMigration.replace(/^begin;\s*/, "").replace(/commit;\s*$/, ""),
+  );
   await db.query("insert into auth.users(id,email) values($1,$2),($3,$4)", [
     ids.staff,
     `test-${ids.staff}@example.invalid`,
@@ -201,6 +213,7 @@ try {
     zip: "20746",
     phone: "",
     support_id: "Strong Support",
+    age: 65,
   };
   const importId = (
     await db.query("select public.prepare_import($1,$2) id", [
@@ -254,13 +267,46 @@ try {
   );
   assert.equal(outcomes[2].error, "No exact Census match");
   const support = await db.query(
-    "select first_name,support_id from public.voters where first_name in ('Alex','Taylor') and last_name='Example' and street='4600 Silver Hill Rd'",
+    "select first_name,support_id,age from public.voters where first_name in ('Alex','Taylor') and last_name='Example' and street='4600 Silver Hill Rd'",
   );
   assert.equal(support.rows.length, 2);
   assert.ok(
     support.rows.every((row) => row.support_id === "Strong Support"),
     "New imports and reuploads of existing voters retain Support ID",
   );
+  assert.ok(
+    support.rows.every((row) => row.age === 65),
+    "New imports store age and duplicate imports fill missing ages",
+  );
+  for (const age of [null, 70]) {
+    const repeatId = (
+      await db.query("select public.prepare_import($1,$2) id", [
+        "age-reupload.csv",
+        JSON.stringify([
+          {
+            row_number: 2,
+            record: { ...baseRecord, age },
+            status: "pending",
+            error: null,
+          },
+        ]),
+      ])
+    ).rows[0].id;
+    const repeatRows = (
+      await db.query("select * from public.claim_import_rows($1)", [repeatId])
+    ).rows;
+    await db.query("select public.finish_import_rows($1)", [
+      JSON.stringify(
+        repeatRows.map((row) => ({ id: row.id, error: "Duplicate" })),
+      ),
+    ]);
+    assert.equal(
+      (await db.query("select age from public.voters where id=$1", [ids.voter]))
+        .rows[0].age,
+      65,
+      "Blank or different ages never overwrite an existing age",
+    );
+  }
   const imported = claimed.find((r) => r.record.first_name === "Taylor");
   await db.query(
     "update public.import_rows set status='processing',claimed_at=now()-interval '4 minutes' where id=$1",
