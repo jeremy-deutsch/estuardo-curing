@@ -245,9 +245,23 @@
   border-left: 0;
 }
 .checkboxCell {
+  position: relative;
   width: 38px;
   padding-right: 3px;
   padding-left: 18px;
+}
+.checkboxLabel,
+.checkboxLabel input {
+  cursor: pointer;
+}
+.checkboxLabel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+.checkboxCell:has(input:focus-visible) {
+  outline: 2px solid #45623c;
+  outline-offset: -2px;
 }
 .voterWorkspace input[type="checkbox"] {
   width: 21px;

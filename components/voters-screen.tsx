@@ -495,25 +495,29 @@ export function VotersScreen({ data }: { data: Workspace }) {
                   <thead>
                     <tr>
                       <th className={styles.checkboxCell}>
-                        <input
-                          type="checkbox"
-                          aria-label="Select all filtered voters"
-                          checked={allSelected}
-                          onChange={() =>
-                            setSelected((prev) =>
-                              allSelected
-                                ? prev.filter(
-                                    (id) => !voters.some((v) => v.id === id),
-                                  )
-                                : [
-                                    ...new Set([
-                                      ...prev,
-                                      ...voters.map((v) => v.id),
-                                    ]),
-                                  ],
-                            )
-                          }
-                        />
+                        <label className={styles.checkboxLabel}>
+                          <input
+                            type="checkbox"
+                            checked={allSelected}
+                            onChange={() =>
+                              setSelected((prev) =>
+                                allSelected
+                                  ? prev.filter(
+                                      (id) => !voters.some((v) => v.id === id),
+                                    )
+                                  : [
+                                      ...new Set([
+                                        ...prev,
+                                        ...voters.map((v) => v.id),
+                                      ]),
+                                    ],
+                              )
+                            }
+                          />
+                          <span className={ui.srOnly}>
+                            Select all filtered voters
+                          </span>
+                        </label>
                       </th>
                       <th>Voter</th>
                       <th>Status</th>
@@ -561,12 +565,16 @@ export function VotersScreen({ data }: { data: Workspace }) {
                         }
                       >
                         <td className={styles.checkboxCell}>
-                          <input
-                            type="checkbox"
-                            aria-label={`Select ${fullName(v)}`}
-                            checked={selected.includes(v.id)}
-                            onChange={() => toggle([v.id])}
-                          />
+                          <label className={styles.checkboxLabel}>
+                            <input
+                              type="checkbox"
+                              checked={selected.includes(v.id)}
+                              onChange={() => toggle([v.id])}
+                            />
+                            <span className={ui.srOnly}>
+                              Select {fullName(v)}
+                            </span>
+                          </label>
                         </td>
                         <td>
                           <strong className={styles.voterName}>
