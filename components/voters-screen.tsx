@@ -434,6 +434,7 @@ export function VotersScreen({ data }: { data: Workspace }) {
                   setPage(0);
                 }}
               />
+              <Icon name="supporter" className={styles.supporterIcon} />
               Supporters
             </label>
           </div>
@@ -568,7 +569,19 @@ export function VotersScreen({ data }: { data: Workspace }) {
                           />
                         </td>
                         <td>
-                          <strong>{fullName(v)}</strong>
+                          <strong className={styles.voterName}>
+                            {fullName(v)}
+                            {(v.support_id === "Strong Support" ||
+                              v.support_id === "Lean Support") && (
+                              <span title="Supporter">
+                                <Icon
+                                  name="supporter"
+                                  className={styles.supporterIcon}
+                                />
+                                <span className={ui.srOnly}> (Supporter)</span>
+                              </span>
+                            )}
+                          </strong>
                           <small>Age: {v.age ?? "Unknown"}</small>
                           <small>
                             {[v.street, v.unit].filter(Boolean).join(", ")}

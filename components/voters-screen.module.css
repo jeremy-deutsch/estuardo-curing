@@ -260,6 +260,16 @@
   align-items: flex-start;
   gap: 5px;
 }
+.voterName {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.supporterIcon {
+  color: #a34235;
+  flex-shrink: 0;
+  margin-right: -2px;
+}
 .batchBadge {
   color: #45657a;
   border-color: #d9e4ed;
