@@ -51,6 +51,28 @@ export const StatusSaved: Story = {
   },
 };
 
+export const DoNotCureSaved: Story = {
+  play: async ({ canvas, userEvent }) => {
+    const controls = within(
+      canvas.getByRole("group", { name: "Curing status for Alex Rivera" }),
+    );
+    await userEvent.click(
+      controls.getByRole("button", { name: "Do not cure" }),
+    );
+    await expect(
+      await canvas.findByText("Alex Rivera: Do not cure. Saved."),
+    ).toBeVisible();
+    await expect(setVoterStatusAction).toHaveBeenCalledWith(
+      doorBatch.public_token,
+      {
+        voter_id: voters[0].id,
+        status: "do_not_cure",
+        updated_at: voters[0].updated_at,
+      },
+    );
+  },
+};
+
 export const StatusConflict: Story = {
   beforeEach() {
     setVoterStatusAction.mockResolvedValue({

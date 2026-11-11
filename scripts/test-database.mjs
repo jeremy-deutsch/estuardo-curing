@@ -50,6 +50,16 @@ try {
   await db.query(
     ageMigration.replace(/^begin;\s*/, "").replace(/commit;\s*$/, ""),
   );
+  const statusMigration = await readFile(
+    new URL(
+      "../supabase/migrations/202611100001_do_not_cure_status.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  await db.query(
+    statusMigration.replace(/^begin;\s*/, "").replace(/commit;\s*$/, ""),
+  );
   await db.query("insert into auth.users(id,email) values($1,$2),($3,$4)", [
     ids.staff,
     `test-${ids.staff}@example.invalid`,
@@ -132,6 +142,27 @@ try {
   assert.equal(batch.voters.length, 1);
   assert.equal(batch.voters[0].id, ids.voter);
   const initial = batch.voters[0].updated_at;
+  await db.query("savepoint do_not_cure_status");
+  const doNotCure = (
+    await db.query(
+      "select public.set_public_status($1,$2,'do_not_cure',$3) as result",
+      [token, ids.voter, initial],
+    )
+  ).rows[0].result;
+  assert.equal(doNotCure.status, "do_not_cure");
+  const savedBatch = (
+    await db.query("select public.read_public_batch($1) as b", [token])
+  ).rows[0].b;
+  assert.equal(savedBatch.voters[0].status, "do_not_cure");
+  const clearedDoNotCure = (
+    await db.query("select public.set_public_status($1,$2,null,$3) as result", [
+      token,
+      ids.voter,
+      doNotCure.updated_at,
+    ])
+  ).rows[0].result;
+  assert.equal(clearedDoNotCure.status, null);
+  await db.query("rollback to savepoint do_not_cure_status");
   const scoped = (
     await db.query(
       "select public.set_public_status($1,$2,'cured',$3) as result",

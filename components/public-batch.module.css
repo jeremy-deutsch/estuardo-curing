@@ -233,6 +233,11 @@
   color: #828e89;
   border-color: #d6dfda;
 }
+.statusOption.do_not_cure.chosen {
+  background: #fbefef;
+  color: #a04e4e;
+  border-color: #ebcece;
+}
 .voterCard .alert {
   font-size: 12px;
   margin: 12px 0 0;

@@ -13,6 +13,7 @@ const colors: Record<string, string> = {
   cured: "#31836b",
   not_interested: "#929b9e",
   no_response: "#c29241",
+  do_not_cure: "#b45b5b",
 };
 export function VoterMap({
   voters,
@@ -262,6 +263,7 @@ export function VoterMap({
           "cured",
           "no_response",
           "not_interested",
+          "do_not_cure",
         ].map((s) => (
           <span key={s}>
             <i style={{ background: colors[s] }} />

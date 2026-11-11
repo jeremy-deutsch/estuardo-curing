@@ -289,6 +289,11 @@
   border-color: #e5e8e8;
   background: #f3f5f5;
 }
+.statusChip.do_not_cure {
+  color: #a04e4e;
+  border-color: #ebcece;
+  background: #fbefef;
+}
 .tablePagination {
   padding: 10px 16px;
   display: flex;

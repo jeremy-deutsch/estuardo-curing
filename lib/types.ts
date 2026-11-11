@@ -3,6 +3,7 @@ export const statuses = [
   "interested",
   "not_interested",
   "no_response",
+  "do_not_cure",
 ] as const;
 export type VoterStatus = (typeof statuses)[number] | null;
 export type BatchType = "door" | "phone";
@@ -11,6 +12,7 @@ export const statusLabels: Record<string, string> = {
   interested: "Interested",
   not_interested: "Not interested",
   no_response: "No response",
+  do_not_cure: "Do not cure",
   uncontacted: "Not contacted",
 };
 export interface VoterInput {

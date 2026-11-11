@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { actionResult } from "@/lib/action-result";
 import { HttpError, staffSession } from "@/lib/auth";
 import { publicClient } from "@/lib/supabase/server";
-import type { VoterStatus } from "@/lib/types";
+import { statuses, type VoterStatus } from "@/lib/types";
 
 export async function removeVotersAction(voterIds: string[]) {
   return actionResult(async () => {
@@ -34,9 +34,7 @@ export async function setVoterStatusAction(
     const body = z
       .object({
         voter_id: z.uuid(),
-        status: z
-          .enum(["cured", "interested", "not_interested", "no_response"])
-          .nullable(),
+        status: z.enum(statuses).nullable(),
         updated_at: z.iso.datetime({ offset: true }),
       })
       .parse(input);
