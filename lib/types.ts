@@ -60,6 +60,7 @@ export interface ImportReport {
   filename: string;
   created_at: string;
   rows: ImportRow[];
+  marked_as_cured: { id: string; record: VoterInput }[];
 }
 export interface PublicBatch {
   name: string;
@@ -69,7 +70,7 @@ export interface PublicBatch {
 export type ActionResult<T> =
   { ok: true; data: T } | { ok: false; error: string; code: number };
 export type AuthState = { error: string | null };
-export type ImportHistory = Omit<ImportReport, "rows">;
+export type ImportHistory = Omit<ImportReport, "rows" | "marked_as_cured">;
 export const fullName = (v: VoterInput) => `${v.first_name} ${v.last_name}`;
 export const address = (v: VoterInput) =>
   [v.street, v.unit, `${v.city}, ${v.state} ${v.zip}`]

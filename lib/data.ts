@@ -66,7 +66,7 @@ export async function importReport(
 ): Promise<ImportReport | null> {
   const { data, error } = await db
     .from("imports")
-    .select("id,filename,created_at")
+    .select("id,filename,created_at,marked_as_cured")
     .eq("id", id)
     .maybeSingle();
   if (error) throw new Error(error.message);

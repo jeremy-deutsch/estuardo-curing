@@ -37,7 +37,14 @@ export function UploadsScreen({
   const [progress, setReport] = useState<ImportReport | null>(null);
   const report = progress || initialReport;
   const [message, setMessage] = useState("");
-  const [issueType, setIssueType] = useState("failed");
+  const [issueType, setIssueType] = useState(
+    initialReport &&
+      !initialReport.rows.some((r) =>
+        ["pending", "processing", "failed"].includes(r.status),
+      )
+      ? "marked_as_cured"
+      : "failed",
+  );
   const [issuePage, setIssuePage] = useState(0);
   const input = useRef<HTMLInputElement>(null);
   const pause = useRef(false);
@@ -93,8 +100,15 @@ export function UploadsScreen({
         !current.rows.some(
           (r) => r.status === "pending" || r.status === "processing",
         )
-      )
+      ) {
         setMessage("Upload complete. Review the results below.");
+        setIssueType(
+          current.rows.some((r) => r.status === "failed")
+            ? "failed"
+            : "marked_as_cured",
+        );
+        setIssuePage(0);
+      }
       router.refresh();
     } catch (e) {
       setError((e as Error).message);
@@ -154,7 +168,15 @@ export function UploadsScreen({
   };
   report?.rows.forEach((r) => counts[r.status]++);
   const remaining = counts.pending + counts.processing;
-  const issues = report?.rows.filter((r) => r.status === issueType) || [];
+  const markedAsCured = report?.marked_as_cured || [];
+  const issues =
+    issueType === "marked_as_cured"
+      ? markedAsCured.map((v) => ({
+          ...v,
+          row_number: null,
+          error: "Absent from this upload; marked as cured",
+        }))
+      : report?.rows.filter((r) => r.status === issueType) || [];
   const safePage = Math.min(
     issuePage,
     Math.max(0, Math.ceil(issues.length / 25) - 1),
@@ -306,6 +328,14 @@ export function UploadsScreen({
               report.
             </p>
           </div>
+          <div>
+            <span>4</span>
+            <p>
+              <strong>Absent voters are marked as cured.</strong> Existing
+              voters missing from this list are marked Cured, unless already
+              Cured or Do not cure.
+            </p>
+          </div>
           <p className={styles.guideFootnote}>
             Required: first name, last name, street, city, state, and ZIP. Phone
             and unit are optional. Political and demographic fields are not
@@ -351,14 +381,18 @@ export function UploadsScreen({
               <span className={ui.greenText}>Imported</span>
             </div>
             <div>
-              <strong>{counts.duplicate}</strong>
-              <span>Duplicates skipped</span>
-            </div>
-            <div>
               <strong>{counts.failed}</strong>
               <span className={counts.failed ? ui.errorText : ""}>
                 Failed rows
               </span>
+            </div>
+            <div>
+              <strong>{markedAsCured.length}</strong>
+              <span className={ui.greenText}>Marked as cured</span>
+            </div>
+            <div>
+              <strong>{counts.duplicate}</strong>
+              <span>Duplicates skipped</span>
             </div>
             <div>
               <strong>{remaining}</strong>
@@ -393,6 +427,15 @@ export function UploadsScreen({
                 Failed rows <span>{counts.failed}</span>
               </button>
               <button
+                className={issueType === "marked_as_cured" ? styles.active : ""}
+                onClick={() => {
+                  setIssueType("marked_as_cured");
+                  setIssuePage(0);
+                }}
+              >
+                Marked as cured <span>{markedAsCured.length}</span>
+              </button>
+              <button
                 className={issueType === "duplicate" ? styles.active : ""}
                 onClick={() => {
                   setIssueType("duplicate");
@@ -419,10 +462,11 @@ export function UploadsScreen({
               <tbody>
                 {issues.slice(safePage * 25, (safePage + 1) * 25).map((r) => (
                   <tr key={r.id}>
-                    <td>{r.row_number}</td>
+                    <td>{r.row_number ?? "—"}</td>
                     <td>{fullName(r.record)}</td>
                     <td>
                       {r.record.street}
+                      {r.record.unit && `, ${r.record.unit}`}
                       <small>
                         {r.record.city}, {r.record.state} {r.record.zip}
                       </small>
@@ -438,7 +482,9 @@ export function UploadsScreen({
                 <p>
                   {issueType === "failed"
                     ? "No failed rows in the results so far."
-                    : "No duplicate rows in the results so far."}
+                    : issueType === "duplicate"
+                      ? "No duplicate rows in the results so far."
+                      : "No voters were marked as cured by this upload."}
                 </p>
               </div>
             )}

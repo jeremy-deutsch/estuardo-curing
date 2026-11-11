@@ -108,6 +108,7 @@ export const completedReport: ImportReport = {
   id: "30000000-0000-4000-8000-000000000001",
   filename: "university-park-voters.csv",
   created_at: timestamp,
+  marked_as_cured: [{ id: voters[0].id, record: voters[0] }],
   rows: voters.map((voter, index) => ({
     id: `40000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
     row_number: index + 2,

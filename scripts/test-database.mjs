@@ -60,6 +60,16 @@ try {
   await db.query(
     statusMigration.replace(/^begin;\s*/, "").replace(/commit;\s*$/, ""),
   );
+  const curedMigration = await readFile(
+    new URL(
+      "../supabase/migrations/202611100002_import_marked_as_cured.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  await db.query(
+    curedMigration.replace(/^begin;\s*/, "").replace(/commit;\s*$/, ""),
+  );
   await db.query("insert into auth.users(id,email) values($1,$2),($3,$4)", [
     ids.staff,
     `test-${ids.staff}@example.invalid`,
@@ -246,6 +256,100 @@ try {
     support_id: "Strong Support",
     age: 65,
   };
+  await db.query("savepoint cured_upload_checks");
+  const fixtureLastName = crypto.randomUUID();
+  const fixtures = (
+    await db.query(
+      `insert into public.voters(first_name,last_name,street,city,state,zip,latitude,longitude,status,updated_at)
+       select name,$1,'123 Test St','Suitland','MD','20746',38.8,-76.9,status,'2020-01-01'
+       from (values ('Missing null',null),('Missing interested','interested'),
+         ('Missing not interested','not_interested'),('Missing no response','no_response'),
+         ('Protected cured','cured'),('Protected do not cure','do_not_cure'),
+         ('Present','interested'),('Present failed','no_response')) f(name,status)
+       returning id,first_name,last_name,street,unit,city,state,zip,phone,status,updated_at`,
+      [fixtureLastName],
+    )
+  ).rows;
+  const incoming = fixtures
+    .filter((v) => v.first_name.startsWith("Present"))
+    .map((v, index) => ({
+      row_number: index + 2,
+      record: {
+        ...v,
+        first_name: v.first_name.toUpperCase(),
+        street: "123 TEST ST.",
+      },
+      status: index ? "failed" : "pending",
+      error: index ? "Invalid age" : null,
+    }));
+  // A duplicate within the file must also count as present.
+  incoming.push({ ...incoming[0], row_number: 4, status: "duplicate" });
+  const curedImportId = (
+    await db.query("select public.prepare_import($1,$2) id", [
+      "cured-check.csv",
+      JSON.stringify(incoming),
+    ])
+  ).rows[0].id;
+  const snapshot = (
+    await db.query("select marked_as_cured from public.imports where id=$1", [
+      curedImportId,
+    ])
+  ).rows[0].marked_as_cured;
+  assert.deepEqual(
+    snapshot
+      .filter((v) => v.record.last_name === fixtureLastName)
+      .map((v) => v.id)
+      .sort(),
+    fixtures
+      .filter((v) => v.first_name.startsWith("Missing"))
+      .map((v) => v.id)
+      .sort(),
+    "Only absent voters outside the two protected statuses are reported as cured",
+  );
+  const afterUpload = (
+    await db.query(
+      "select id,status,updated_at from public.voters where last_name=$1",
+      [fixtureLastName],
+    )
+  ).rows;
+  for (const before of fixtures) {
+    const after = afterUpload.find((v) => v.id === before.id);
+    const changed = before.first_name.startsWith("Missing");
+    assert.equal(after.status, changed ? "cured" : before.status);
+    assert.equal(
+      after.updated_at.getTime() > before.updated_at.getTime(),
+      changed,
+    );
+  }
+  const repeatedId = (
+    await db.query("select public.prepare_import($1,$2) id", [
+      "repeat-cured-check.csv",
+      JSON.stringify(incoming),
+    ])
+  ).rows[0].id;
+  assert.deepEqual(
+    (
+      await db.query("select marked_as_cured from public.imports where id=$1", [
+        repeatedId,
+      ])
+    ).rows[0].marked_as_cured,
+    [],
+    "Repeated uploads do not report voters who were already cured",
+  );
+  await db.query("delete from public.voters where id=$1", [
+    fixtures.find((v) => v.first_name === "Missing null").id,
+  ]);
+  assert.deepEqual(
+    (
+      await db.query("select marked_as_cured from public.imports where id=$1", [
+        curedImportId,
+      ])
+    ).rows[0].marked_as_cured,
+    snapshot,
+    "Upload reports retain cured voter details after removal",
+  );
+  await db.query("rollback to savepoint cured_upload_checks");
+
   const importId = (
     await db.query("select public.prepare_import($1,$2) id", [
       "integration.csv",
