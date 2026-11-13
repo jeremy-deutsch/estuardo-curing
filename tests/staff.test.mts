@@ -23,7 +23,10 @@ import { isSuperAdmin, superAdminSession } from "../lib/super-admin";
 import { staffSession, staffPageSession } from "../lib/auth";
 import { approveStaffAction } from "../app/actions/staff";
 import { removeVotersAction } from "../app/actions/voters";
-import { deleteBatchAction } from "../app/actions/batches";
+import {
+  deleteBatchAction,
+  removeVoterFromBatchAction,
+} from "../app/actions/batches";
 import { signupAction, loginAction } from "../app/actions/auth";
 import { staffAccounts } from "../lib/staff-management";
 import { GET } from "../app/auth/callback/route";
@@ -274,6 +277,115 @@ describe("batch deletion", () => {
         ok: false,
         code: 500,
       });
+      expect(mocks.revalidate).not.toHaveBeenCalled();
+    } finally {
+      log.mockRestore();
+    }
+  });
+});
+
+describe("removing a voter from a batch", () => {
+  function removalFixture({
+    batchExists = true,
+    memberExists = true,
+    error = null as Error | null,
+  } = {}) {
+    const f = sessionFixture({ id: applicantId });
+    const membership = {
+      delete: vi.fn(),
+      eq: vi.fn(),
+      select: vi.fn(),
+      maybeSingle: vi.fn().mockResolvedValue({
+        data: memberExists ? { voter_id: ownerId } : null,
+        error,
+      }),
+    };
+    membership.delete.mockReturnValue(membership);
+    membership.eq.mockReturnValue(membership);
+    membership.select.mockReturnValue(membership);
+    const batch = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      maybeSingle: vi.fn().mockResolvedValue({
+        data: batchExists ? { public_token: "volunteer-token" } : null,
+        error: null,
+      }),
+    };
+    batch.select.mockReturnValue(batch);
+    batch.eq.mockReturnValue(batch);
+    const staffQuery = { select: vi.fn().mockReturnValue({ eq: f.eq }) };
+    f.from.mockImplementation((table) => {
+      if (table === "batches") return batch;
+      if (table === "batch_voters") return membership;
+      return staffQuery;
+    });
+    return { ...f, membership };
+  }
+
+  it("blocks signed-out and unapproved callers", async () => {
+    for (const [session, code] of [
+      [{ signedIn: false }, 401],
+      [{ approved: false }, 403],
+    ] as const) {
+      const f = sessionFixture(session);
+      expect(
+        await removeVoterFromBatchAction(applicantId, ownerId),
+      ).toMatchObject({ ok: false, code });
+      expect(f.from).not.toHaveBeenCalledWith("batch_voters");
+    }
+  });
+
+  it("rejects invalid batch and voter IDs before deleting", async () => {
+    const f = removalFixture();
+    for (const [batch, voter] of [
+      ["invalid", ownerId],
+      [applicantId, "invalid"],
+    ]) {
+      expect(await removeVoterFromBatchAction(batch, voter)).toMatchObject({
+        ok: false,
+        code: 400,
+      });
+    }
+    expect(f.membership.delete).not.toHaveBeenCalled();
+  });
+
+  it("lets ordinary staff remove only the selected membership and refresh affected pages", async () => {
+    const f = removalFixture();
+    expect(await removeVoterFromBatchAction(applicantId, ownerId)).toEqual({
+      ok: true,
+      data: null,
+    });
+    expect(f.membership.eq).toHaveBeenCalledWith("batch_id", applicantId);
+    expect(f.membership.eq).toHaveBeenCalledWith("voter_id", ownerId);
+    expect(f.from).not.toHaveBeenCalledWith("voters");
+    expect(mocks.admin).not.toHaveBeenCalled();
+    for (const path of [
+      "/batches",
+      `/batches/${applicantId}`,
+      "/voters",
+      "/batch/volunteer-token",
+    ]) {
+      expect(mocks.revalidate).toHaveBeenCalledWith(path);
+    }
+  });
+
+  it("reports missing batches and memberships without refreshing", async () => {
+    for (const fixture of [{ batchExists: false }, { memberExists: false }]) {
+      removalFixture(fixture);
+      expect(
+        await removeVoterFromBatchAction(applicantId, ownerId),
+      ).toMatchObject({ ok: false, code: 404 });
+    }
+    expect(mocks.revalidate).not.toHaveBeenCalled();
+  });
+
+  it("reports database failures without reporting success or refreshing", async () => {
+    removalFixture({ error: new Error("DB failure") });
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      expect(
+        await removeVoterFromBatchAction(applicantId, ownerId),
+      ).toMatchObject({ ok: false, code: 500 });
       expect(mocks.revalidate).not.toHaveBeenCalled();
     } finally {
       log.mockRestore();

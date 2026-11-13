@@ -16,6 +16,9 @@ export const updateBatchAction =
   fn<typeof Batches.updateBatchAction>().mockName("updateBatchAction");
 export const deleteBatchAction =
   fn<typeof Batches.deleteBatchAction>().mockName("deleteBatchAction");
+export const removeVoterFromBatchAction = fn<
+  typeof Batches.removeVoterFromBatchAction
+>().mockName("removeVoterFromBatchAction");
 export const createImportAction =
   fn<typeof Imports.createImportAction>().mockName("createImportAction");
 export const setVoterStatusAction = fn<
@@ -34,6 +37,9 @@ export function resetActions() {
     .mockResolvedValue({ ok: true, data: { id: doorBatch.id } });
   updateBatchAction.mockReset().mockResolvedValue({ ok: true, data: null });
   deleteBatchAction.mockReset().mockResolvedValue({ ok: true, data: null });
+  removeVoterFromBatchAction
+    .mockReset()
+    .mockResolvedValue({ ok: true, data: null });
   removeVotersAction.mockReset().mockImplementation(async (ids) => ({
     ok: true,
     data: { count: ids.length },

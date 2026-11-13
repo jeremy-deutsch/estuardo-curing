@@ -5,6 +5,39 @@ import { redirect } from "next/navigation";
 import { staffSession, HttpError } from "@/lib/auth";
 import { actionResult } from "@/lib/action-result";
 
+export async function removeVoterFromBatchAction(
+  batchId: string,
+  voterId: string,
+) {
+  return actionResult(async () => {
+    const { db } = await staffSession();
+    const id = z.uuid().parse(batchId);
+    const voter = z.uuid().parse(voterId);
+    const { data: batch, error: batchError } = await db
+      .from("batches")
+      .select("public_token")
+      .eq("id", id)
+      .maybeSingle();
+    if (batchError) throw batchError;
+    if (!batch) throw new HttpError("Batch not found.", 404);
+    const { data, error } = await db
+      .from("batch_voters")
+      .delete()
+      .eq("batch_id", id)
+      .eq("voter_id", voter)
+      .select("voter_id")
+      .maybeSingle();
+    if (error) throw error;
+    if (!data)
+      throw new HttpError("This voter is no longer in the batch.", 404);
+    revalidatePath("/batches");
+    revalidatePath(`/batches/${id}`);
+    revalidatePath("/voters");
+    revalidatePath(`/batch/${batch.public_token}`);
+    return null;
+  });
+}
+
 export async function deleteBatchAction(
   batchId: string,
   redirectToList = false,

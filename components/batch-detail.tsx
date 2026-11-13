@@ -5,6 +5,7 @@ import styles from "./batch-detail.module.css";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { removeVoterFromBatchAction } from "@/app/actions/batches";
 import type { Batch, PublicBatch } from "@/lib/types";
 import { Icon } from "./icon";
 import { PublicBatchView } from "./public-batch";
@@ -76,6 +77,7 @@ export function BatchDetail({
         batch={content}
         readOnly={!batch.active}
         embedded
+        removeVoterAction={removeVoterFromBatchAction.bind(null, batch.id)}
       />
     </>
   );

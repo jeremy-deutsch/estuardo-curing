@@ -15,7 +15,13 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const DoorKnocking: Story = {};
+export const DoorKnocking: Story = {
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.queryByRole("button", { name: /Remove .* from this batch/ }),
+    ).not.toBeInTheDocument();
+  },
+};
 export const PhoneCalling: Story = {
   args: { token: phoneBatch.public_token, batch: publicContent(phoneBatch) },
 };

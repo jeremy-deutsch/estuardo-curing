@@ -139,6 +139,9 @@ try {
   await denied("select * from public.voters");
   await denied("select * from public.batches");
   await denied(`delete from public.batches where id='${ids.batch}'`);
+  await denied(
+    `delete from public.batch_voters where batch_id='${ids.batch}' and voter_id='${ids.voter}'`,
+  );
   await denied("select * from public.import_rows");
   await denied(`select public.remove_voters(array['${ids.voter}']::uuid[])`);
   assert.equal(
@@ -231,6 +234,16 @@ try {
     ).rowCount,
     0,
     "Unapproved accounts cannot delete batches",
+  );
+  assert.equal(
+    (
+      await db.query(
+        "delete from public.batch_voters where batch_id=$1 and voter_id=$2 returning voter_id",
+        [ids.batch, ids.voter],
+      )
+    ).rowCount,
+    0,
+    "Unapproved accounts cannot remove voters from batches",
   );
   await denied(`select public.remove_voters(array['${ids.voter}']::uuid[])`);
   await db.query("select set_config('request.jwt.claim.sub',$1,true)", [
@@ -486,6 +499,70 @@ try {
     ).rows[0].n,
     2,
   );
+  await db.query("savepoint batch_voter_removal");
+  const voterBeforeRemoval = (
+    await db.query("select * from public.voters where id=$1", [ids.voter])
+  ).rows;
+  const historyBeforeRemoval = (
+    await db.query(
+      "select * from public.status_events where voter_id=$1 order by id",
+      [ids.voter],
+    )
+  ).rows;
+  assert.equal(
+    (
+      await db.query(
+        "delete from public.batch_voters where batch_id=$1 and voter_id=$2 returning voter_id",
+        [ids.batch, ids.voter],
+      )
+    ).rowCount,
+    1,
+    "Staff can remove a voter from a batch",
+  );
+  assert.deepEqual(
+    (await db.query("select * from public.voters where id=$1", [ids.voter]))
+      .rows,
+    voterBeforeRemoval,
+    "Removing a batch membership preserves the voter and status",
+  );
+  assert.deepEqual(
+    (
+      await db.query(
+        "select * from public.status_events where voter_id=$1 order by id",
+        [ids.voter],
+      )
+    ).rows,
+    historyBeforeRemoval,
+    "Removing a batch membership preserves contact history",
+  );
+  assert.equal(
+    (
+      await db.query(
+        "select count(*)::int n from public.batch_voters where batch_id=$1 and voter_id=$2",
+        [assigned, ids.voter],
+      )
+    ).rows[0].n,
+    1,
+    "The voter's other batch assignments remain intact",
+  );
+  await db.query("set local role anon");
+  assert.deepEqual(
+    (await db.query("select public.read_public_batch($1) as b", [token]))
+      .rows[0].b.voters,
+    [],
+    "The volunteer view no longer includes the removed voter",
+  );
+  assert.equal(
+    (
+      await db.query(
+        "select public.set_public_status($1,$2,'cured',$3) as result",
+        [token, ids.voter, cleared.updated_at],
+      )
+    ).rows[0].result.error,
+    "unavailable",
+    "The batch link cannot update voters removed from the batch",
+  );
+  await db.query("rollback to savepoint batch_voter_removal");
   await db.query("update public.batches set active=false where id=$1", [
     ids.batch,
   ]);

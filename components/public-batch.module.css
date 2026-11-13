@@ -164,15 +164,45 @@
   margin-top: 8px;
   color: #a3ad95;
 }
-.cardPerson > .statusChip {
-  font-size: 10px;
+.statusActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   position: absolute;
   top: -5px;
   right: -6px;
+}
+.statusActions .statusChip {
+  font-size: 10px;
   max-width: 110px;
 }
-.cardPerson:has(> .statusChip) h3 {
+.cardPerson:has(> .statusActions) h3 {
   padding-right: 60px;
+}
+.cardPerson:has(.removeVoter) h3 {
+  padding-right: 90px;
+}
+.removeVoter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #91a07e;
+  font-size: 12px;
+}
+.removeVoter:hover:not(:disabled) {
+  background: #fbefef;
+  color: #a04e4e;
+}
+.removeVoter:focus-visible {
+  outline: 2px solid #a04e4e;
+  outline-offset: 2px;
 }
 .contactLinks {
   display: flex;
@@ -293,8 +323,10 @@
   .voterCards {
     grid-template-columns: 1fr;
   }
-  .cardPerson > .statusChip {
+  .cardPerson > .statusActions {
     position: static;
+  }
+  .statusActions .statusChip {
     font-size: 11px;
   }
   .cardPerson h3 {
@@ -380,7 +412,7 @@
   .cardPerson h3 {
     font-size: 15px;
   }
-  .cardPerson > .statusChip {
+  .statusActions .statusChip {
     font-size: 10px;
   }
   .cardPerson .cardNumber {

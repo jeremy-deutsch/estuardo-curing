@@ -10,6 +10,7 @@ import {
   address,
   statuses,
   statusLabels,
+  type ActionResult,
   type PublicBatch,
   type VoterStatus,
 } from "@/lib/types";
@@ -20,11 +21,13 @@ export function PublicBatchView({
   batch,
   readOnly = false,
   embedded = false,
+  removeVoterAction,
 }: {
   token: string;
   batch: PublicBatch;
   readOnly?: boolean;
   embedded?: boolean;
+  removeVoterAction?: (voterId: string) => Promise<ActionResult<null>>;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -59,6 +62,29 @@ export function PublicBatchView({
         setMessage(
           `${fullName(voter)}: ${status ? statusLabels[status] : "status cleared"}. Saved.`,
         );
+      } catch (e) {
+        setRowErrors((prev) => ({ ...prev, [id]: (e as Error).message }));
+      } finally {
+        setBusy((prev) => prev.filter((v) => v !== id));
+      }
+    });
+  }
+  function remove(id: string) {
+    const voter = batch.voters.find((v) => v.id === id);
+    if (!voter || !removeVoterAction) return;
+    if (!window.confirm("Remove voter from this batch?")) return;
+    setBusy((prev) => [...prev, id]);
+    setRowErrors((prev) => ({ ...prev, [id]: "" }));
+    setMessage("");
+    startTransition(async () => {
+      try {
+        const result = await removeVoterAction(id);
+        if (!result.ok) {
+          setRowErrors((prev) => ({ ...prev, [id]: result.error }));
+          if (result.code === 404) router.refresh();
+          return;
+        }
+        setMessage(`${fullName(voter)} removed from this batch.`);
       } catch (e) {
         setRowErrors((prev) => ({ ...prev, [id]: (e as Error).message }));
       } finally {
@@ -203,11 +229,25 @@ export function PublicBatchView({
                       {v.phone || "No phone number on file"}
                     </p>
                   </div>
-                  <span
-                    className={`${ui.statusChip} ${styles.statusChip} ${ui[v.status || "uncontacted"] || ""}`}
-                  >
-                    <i />
-                    {statusLabels[v.status || "uncontacted"]}
+                  <span className={styles.statusActions}>
+                    <span
+                      className={`${ui.statusChip} ${styles.statusChip} ${ui[v.status || "uncontacted"] || ""}`}
+                    >
+                      <i />
+                      {statusLabels[v.status || "uncontacted"]}
+                    </span>
+                    {removeVoterAction && (
+                      <button
+                        type="button"
+                        className={styles.removeVoter}
+                        aria-label={`Remove ${fullName(v)} from this batch`}
+                        title="Remove from batch"
+                        disabled={busy.includes(v.id) || refreshing}
+                        onClick={() => remove(v.id)}
+                      >
+                        <Icon name="close" />
+                      </button>
+                    )}
                   </span>
                 </div>
                 <div className={styles.contactLinks}>
