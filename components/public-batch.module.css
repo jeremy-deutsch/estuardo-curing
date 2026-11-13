@@ -226,7 +226,7 @@
   flex-wrap: wrap;
 }
 .statusOption {
-  font-size: 11px;
+  font-size: 12px;
   border: 1px solid #e5eadc;
   border-radius: 5px;
   padding: 8px 8px;
@@ -423,10 +423,16 @@
   .contactLinks {
     padding-left: 31px;
   }
+  .statusControls {
+    justify-content: center;
+  }
   .statusOption {
-    font-size: 11px;
+    flex: 0 1 calc((100% - 10px) / 3);
+    font-size: 12px;
     padding: 8px 5px;
     gap: 4px;
+    min-height: 40px;
+    white-space: normal;
   }
   .saveAnnouncement {
     font-size: 11px;
