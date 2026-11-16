@@ -31,6 +31,7 @@ import { signupAction, loginAction } from "../app/actions/auth";
 import { staffAccounts } from "../lib/staff-management";
 import { GET } from "../app/auth/callback/route";
 import { NextRequest } from "next/server";
+import { markNotesViewedAction } from "../app/actions/notes";
 
 const ownerId = "00000000-0000-4000-8000-000000000001";
 const applicantId = "00000000-0000-4000-8000-000000000002";
@@ -64,9 +65,10 @@ function sessionFixture({
     }),
     exchangeCodeForSession: vi.fn().mockResolvedValue({ error: null }),
   };
-  const db = { auth, from };
+  const rpc = vi.fn();
+  const db = { auth, from, rpc };
   mocks.server.mockResolvedValue(db);
-  return { db, auth, from, eq, maybeSingle };
+  return { db, auth, from, eq, maybeSingle, rpc };
 }
 
 function adminFixture() {
@@ -103,6 +105,37 @@ beforeEach(() => {
   sessionFixture();
 });
 afterEach(() => vi.unstubAllEnvs());
+
+describe("Notes visit tracking", () => {
+  const viewedAt = "2026-11-16T18:00:00.123456Z";
+  it("rejects signed-out and unapproved callers", async () => {
+    for (const state of [{ signedIn: false }, { approved: false }]) {
+      const fixture = sessionFixture(state);
+      expect((await markNotesViewedAction(viewedAt)).ok).toBe(false);
+      expect(fixture.rpc).not.toHaveBeenCalled();
+    }
+  });
+  it("records a validated snapshot using the caller's session", async () => {
+    const fixture = sessionFixture();
+    fixture.rpc.mockResolvedValue({ data: viewedAt, error: null });
+    expect(await markNotesViewedAction(viewedAt)).toEqual({
+      ok: true,
+      data: { viewed_at: viewedAt },
+    });
+    expect(fixture.rpc).toHaveBeenCalledWith("mark_notes_viewed", {
+      p_viewed_at: viewedAt,
+    });
+    expect(mocks.revalidate).not.toHaveBeenCalled();
+  });
+  it("rejects malformed timestamps without calling the database", async () => {
+    const fixture = sessionFixture();
+    expect(await markNotesViewedAction("not-a-date")).toMatchObject({
+      ok: false,
+      code: 400,
+    });
+    expect(fixture.rpc).not.toHaveBeenCalled();
+  });
+});
 
 describe("staff and super-admin authorization", () => {
   it("fails closed with no configured owner", () => {

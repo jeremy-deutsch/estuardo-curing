@@ -1,7 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { expect, within } from "storybook/test";
+import { expect, waitFor, within } from "storybook/test";
 import { PublicBatchView } from "@/components/public-batch";
-import { setVoterStatusAction } from "../.storybook/mocks/actions";
+import {
+  addVoterNoteAction,
+  setVoterStatusAction,
+} from "../.storybook/mocks/actions";
 import { doorBatch, phoneBatch, publicContent, voters } from "./fixtures";
 
 const meta = {
@@ -96,5 +99,99 @@ export const StatusConflict: Story = {
     await expect(await canvas.findByRole("alert")).toHaveTextContent(
       "Another volunteer updated this voter",
     );
+  },
+};
+
+export const NoteSaved: Story = {
+  beforeEach() {
+    localStorage.removeItem("ballot-operations:note-author:v1");
+    return () => localStorage.removeItem("ballot-operations:note-author:v1");
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const screen = within(canvasElement.ownerDocument.body);
+    const trigger = canvas.getByRole("button", {
+      name: "Add note for Alex Rivera",
+    });
+    await userEvent.click(trigger);
+    let dialog = within(
+      await screen.findByRole("dialog", { name: "Add a note" }),
+    );
+    await expect(
+      dialog.getByRole("button", { name: "Save note" }),
+    ).toBeDisabled();
+    await userEvent.type(
+      dialog.getByRole("textbox", { name: "Your name" }),
+      "Taylor Volunteer",
+    );
+    await userEvent.type(
+      dialog.getByRole("textbox", { name: "Note" }),
+      "Please call tomorrow.",
+    );
+    await userEvent.click(dialog.getByRole("button", { name: "Save note" }));
+    await expect(
+      await canvas.findByText("Note for Alex Rivera saved. Thank you."),
+    ).toBeVisible();
+    await expect(addVoterNoteAction).toHaveBeenCalledWith(
+      doorBatch.public_token,
+      {
+        voter_id: voters[0].id,
+        author_name: "Taylor Volunteer",
+        body: "Please call tomorrow.",
+      },
+    );
+    await expect(localStorage.getItem("ballot-operations:note-author:v1")).toBe(
+      "Taylor Volunteer",
+    );
+    await waitFor(() => expect(trigger).toHaveFocus());
+    const otherTrigger = canvas.getAllByRole("button", {
+      name: /^Add note for /,
+    })[1];
+    await userEvent.click(otherTrigger);
+    dialog = within(await screen.findByRole("dialog", { name: "Add a note" }));
+    await expect(
+      dialog.getByRole("textbox", { name: "Your name" }),
+    ).toHaveValue("Taylor Volunteer");
+    await expect(dialog.getByRole("textbox", { name: "Note" })).toHaveValue("");
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    await expect(otherTrigger).toHaveFocus();
+  },
+};
+
+export const NoteSaveError: Story = {
+  beforeEach() {
+    addVoterNoteAction.mockResolvedValue({
+      ok: false,
+      code: 404,
+      error:
+        "This batch or voter is unavailable. Refresh the batch and try again.",
+    });
+    localStorage.removeItem("ballot-operations:note-author:v1");
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Add note for Alex Rivera" }),
+    );
+    const dialog = within(
+      await within(canvasElement.ownerDocument.body).findByRole("dialog"),
+    );
+    await userEvent.type(
+      dialog.getByRole("textbox", { name: "Your name" }),
+      "Taylor",
+    );
+    await userEvent.type(
+      dialog.getByRole("textbox", { name: "Note" }),
+      "Keep this draft.",
+    );
+    await userEvent.click(dialog.getByRole("button", { name: "Save note" }));
+    await expect(await dialog.findByRole("alert")).toHaveTextContent(
+      "This batch or voter is unavailable",
+    );
+    await expect(dialog.getByRole("textbox", { name: "Note" })).toHaveValue(
+      "Keep this draft.",
+    );
+    await userEvent.click(dialog.getByRole("button", { name: "Cancel" }));
   },
 };

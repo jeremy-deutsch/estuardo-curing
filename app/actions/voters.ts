@@ -15,6 +15,7 @@ export async function removeVotersAction(voterIds: string[]) {
     });
     if (error) throw error;
     revalidatePath("/voters");
+    revalidatePath("/notes");
     revalidatePath("/batches");
     revalidatePath("/batches/[id]", "page");
     revalidatePath("/batch/[token]", "page");
@@ -55,6 +56,7 @@ export async function setVoterStatusAction(
     if (!data || data.error)
       throw new HttpError("This batch or voter is unavailable.", 404);
     revalidatePath(`/batch/${token}`);
+    revalidatePath("/notes");
     revalidatePath("/batches/[id]", "page");
     revalidatePath("/voters");
     revalidatePath("/batches");

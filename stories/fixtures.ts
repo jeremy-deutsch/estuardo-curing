@@ -99,7 +99,7 @@ export function publicContent(batch: Batch): PublicBatch {
 }
 
 export const workspace: Workspace = {
-  voters,
+  voters: voters.map((voter) => ({ ...voter, has_notes: false })),
   batches: [doorBatch, phoneBatch, disabledBatch],
 };
 export const emptyWorkspace: Workspace = { voters: [], batches: [] };

@@ -16,7 +16,7 @@ const config: StorybookConfig = {
       resolve: {
         alias: [
           {
-            find: /^@\/app\/actions\/(auth|batches|imports|voters)$/,
+            find: /^@\/app\/actions\/(auth|batches|imports|voters|notes)$/,
             replacement: fileURLToPath(
               new URL("./mocks/actions.ts", import.meta.url),
             ),

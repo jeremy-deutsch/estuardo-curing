@@ -30,6 +30,7 @@ export const config = {
     "/",
     "/auth/:path*",
     "/voters/:path*",
+    "/notes/:path*",
     "/batches/:path*",
     "/uploads/:path*",
     "/api/:path*",

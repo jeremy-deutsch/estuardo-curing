@@ -7,13 +7,16 @@ import { usePathname } from "next/navigation";
 import { useActionState } from "react";
 import { Icon } from "./icon";
 import { logoutAction } from "@/app/actions/auth";
+import { NotesUnreadIndicator } from "./notes-unread-indicator";
 export function StaffShell({
   email,
   superAdmin = false,
+  hasUnreadNotes = false,
   children,
 }: {
   email: string;
   superAdmin?: boolean;
+  hasUnreadNotes?: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -36,6 +39,7 @@ export function StaffShell({
             [
               { href: "/voters", label: "Voters", icon: "voters" },
               { href: "/batches", label: "Batches", icon: "batches" },
+              { href: "/notes", label: "Notes", icon: "notes" },
               { href: "/uploads", label: "Uploads", icon: "upload" },
             ] as const
           ).map((item) => (
@@ -46,6 +50,9 @@ export function StaffShell({
             >
               <Icon name={item.icon} />
               {item.label}
+              {item.href === "/notes" && (
+                <NotesUnreadIndicator initialUnread={hasUnreadNotes} />
+              )}
               {pathname.startsWith(item.href) && (
                 <span className={styles.navActiveDot} />
               )}
@@ -103,11 +110,13 @@ export function StaffShell({
             <span>
               {pathname.startsWith("/staff")
                 ? "Staff management"
-                : pathname.startsWith("/uploads")
-                  ? "Uploads"
-                  : pathname.startsWith("/batches")
-                    ? "Batches"
-                    : "Voters"}
+                : pathname.startsWith("/notes")
+                  ? "Notes"
+                  : pathname.startsWith("/uploads")
+                    ? "Uploads"
+                    : pathname.startsWith("/batches")
+                      ? "Batches"
+                      : "Voters"}
             </span>
           </div>
           <span className={ui.staffBadge}>

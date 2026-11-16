@@ -39,6 +39,26 @@ async function denied(sql) {
 try {
   await db.connect();
   await db.query("begin");
+  const notesMigration = await readFile(
+    new URL(
+      "../supabase/migrations/20261116180248_voter_notes.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  await db.query(
+    notesMigration.replace(/^begin;\s*/, "").replace(/commit;\s*$/, ""),
+  );
+  const notesViewedMigration = await readFile(
+    new URL(
+      "../supabase/migrations/20261116195834_notes_last_viewed.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  await db.query(
+    notesViewedMigration.replace(/^begin;\s*/, "").replace(/commit;\s*$/, ""),
+  );
   // Exercise the age migration inside this test's rollback transaction.
   const ageMigration = await readFile(
     new URL(
@@ -135,6 +155,55 @@ try {
     "Database collation must preserve Unicode names",
   );
   await db.query("set local role anon");
+  await denied("select * from public.voter_notes");
+  await denied("select public.notes_read_status()");
+  await denied("select public.mark_notes_viewed(clock_timestamp())");
+  await denied(
+    "insert into public.voter_notes(author_name,body) values('Volunteer','Bypass')",
+  );
+  const noteId = (
+    await db.query("select public.add_public_note($1,$2,$3,$4) id", [
+      token,
+      ids.voter,
+      "  Taylor Volunteer  ",
+      'Follow up tomorrow.\nThey said "yes", please call.',
+    ])
+  ).rows[0].id;
+  assert.ok(noteId, "Anonymous batch holders can leave notes");
+  for (const [batchToken, voterId] of [
+    ["0".repeat(64), ids.voter],
+    [token, ids.otherVoter],
+  ]) {
+    assert.equal(
+      (
+        await db.query(
+          "select public.add_public_note($1,$2,'Taylor','Scoped note') id",
+          [batchToken, voterId],
+        )
+      ).rows[0].id,
+      null,
+      "Notes require a valid token and batch membership",
+    );
+  }
+  for (const [name, body] of [
+    ["", "Note"],
+    ["Taylor", " \t\n "],
+    ["a".repeat(121), "Note"],
+    ["Taylor", "a".repeat(5001)],
+    [null, "Note"],
+    ["Taylor", null],
+  ]) {
+    await db.query("savepoint invalid_note");
+    await assert.rejects(
+      db.query("select public.add_public_note($1,$2,$3,$4)", [
+        token,
+        ids.voter,
+        name,
+        body,
+      ]),
+    );
+    await db.query("rollback to savepoint invalid_note");
+  }
   await denied("select * from public.staff_members");
   await denied("select * from public.voters");
   await denied("select * from public.batches");
@@ -216,6 +285,15 @@ try {
     0,
     "Unapproved accounts cannot read other accounts' staff memberships",
   );
+  await denied("select public.notes_read_status()");
+  await denied("select public.mark_notes_viewed(clock_timestamp())");
+  assert.equal(
+    (await db.query("select count(*)::int n from public.voter_notes")).rows[0]
+      .n,
+    0,
+    "Unapproved accounts cannot read notes",
+  );
+  await denied("update public.voter_notes set body='Changed'");
   await denied(
     `insert into public.staff_members(user_id) values('${ids.outsider}')`,
   );
@@ -269,6 +347,115 @@ try {
     support_id: "Strong Support",
     age: 65,
   };
+  await db.query("savepoint notes_read_tracking");
+  const unreadStatus = (
+    await db.query("select public.notes_read_status() state")
+  ).rows[0].state;
+  assert.equal(unreadStatus.last_viewed_at, null);
+  assert.equal(
+    unreadStatus.has_unread,
+    true,
+    "Existing notes are unread for staff who have never visited",
+  );
+  assert.equal(
+    (await db.query("select public.notes_read_status() state")).rows[0].state
+      .last_viewed_at,
+    null,
+    "Status reads/prefetches never record a visit",
+  );
+  await db.query("select public.mark_notes_viewed($1)", [
+    unreadStatus.checked_at,
+  ]);
+  const viewedStatus = (
+    await db.query("select public.notes_read_status() state")
+  ).rows[0].state;
+  assert.ok(viewedStatus.last_viewed_at);
+  assert.equal(
+    viewedStatus.has_unread,
+    false,
+    "Opening Notes clears the displayed snapshot",
+  );
+  await denied(
+    "update public.staff_members set notes_last_viewed_at=clock_timestamp()",
+  );
+  for (const value of [
+    "null",
+    "'infinity'::timestamptz",
+    "clock_timestamp() + interval '1 day'",
+  ]) {
+    await denied(`select public.mark_notes_viewed(${value})`);
+  }
+  await db.query("select public.mark_notes_viewed('2000-01-01')");
+  assert.equal(
+    (await db.query("select public.notes_read_status() state")).rows[0].state
+      .has_unread,
+    false,
+    "A stale tab cannot move the read boundary backwards",
+  );
+  await db.query(
+    "select public.add_public_note($1,$2,'Taylor','Arrived after the displayed snapshot')",
+    [token, ids.voter],
+  );
+  await db.query("select public.mark_notes_viewed($1)", [
+    unreadStatus.checked_at,
+  ]);
+  assert.equal(
+    (await db.query("select public.notes_read_status() state")).rows[0].state
+      .has_unread,
+    true,
+    "Notes arriving between the page read and acknowledgement stay unread",
+  );
+  const latestStatus = (
+    await db.query("select public.notes_read_status() state")
+  ).rows[0].state;
+  await db.query("select public.mark_notes_viewed($1)", [
+    latestStatus.checked_at,
+  ]);
+  assert.equal(
+    (await db.query("select public.notes_read_status() state")).rows[0].state
+      .has_unread,
+    false,
+  );
+  await db.query("reset role");
+  await db.query("insert into public.staff_members(user_id) values($1)", [
+    ids.outsider,
+  ]);
+  await db.query("set local role authenticated");
+  await db.query("select set_config('request.jwt.claim.sub',$1,true)", [
+    ids.outsider,
+  ]);
+  const otherStaffStatus = (
+    await db.query("select public.notes_read_status() state")
+  ).rows[0].state;
+  assert.equal(otherStaffStatus.last_viewed_at, null);
+  assert.equal(
+    otherStaffStatus.has_unread,
+    true,
+    "Each staff member has an independent unread state",
+  );
+  assert.equal(
+    (await db.query("select count(*)::int n from public.staff_members")).rows[0]
+      .n,
+    1,
+    "Staff can only read their own visit metadata",
+  );
+  await db.query("rollback to savepoint notes_read_tracking");
+  const savedNote = (
+    await db.query("select * from public.voter_notes where id=$1", [noteId])
+  ).rows[0];
+  assert.equal(savedNote.author_name, "Taylor Volunteer");
+  assert.equal(
+    savedNote.body,
+    'Follow up tomorrow.\nThey said "yes", please call.',
+  );
+  assert.equal(savedNote.voter_name, "Alex Example");
+  assert.equal(
+    savedNote.voter_address,
+    "4600 Silver Hill Rd, Suitland, MD 20746",
+  );
+  assert.equal(savedNote.voter_id, ids.voter);
+  await denied("update public.voter_notes set body='Changed'");
+  await denied("delete from public.voter_notes");
   await db.query("savepoint cured_upload_checks");
   const fixtureLastName = crypto.randomUUID();
   const fixtures = (
@@ -562,6 +749,16 @@ try {
     "unavailable",
     "The batch link cannot update voters removed from the batch",
   );
+  assert.equal(
+    (
+      await db.query(
+        "select public.add_public_note($1,$2,'Taylor','Removed voter') id",
+        [token, ids.voter],
+      )
+    ).rows[0].id,
+    null,
+    "Removed memberships cannot leave notes",
+  );
   await db.query("rollback to savepoint batch_voter_removal");
   await db.query("update public.batches set active=false where id=$1", [
     ids.batch,
@@ -579,6 +776,16 @@ try {
     )
   ).rows[0].result;
   assert.equal(revoked.error, "unavailable");
+  assert.equal(
+    (
+      await db.query(
+        "select public.add_public_note($1,$2,'Taylor','Revoked link') id",
+        [token, ids.voter],
+      )
+    ).rows[0].id,
+    null,
+    "Disabled batches cannot leave notes",
+  );
   await db.query("reset role");
   assert.equal(
     (
@@ -628,6 +835,12 @@ try {
     2,
     "Removing a voter preserves their contact history",
   );
+  const preservedNote = (
+    await db.query("select * from public.voter_notes where id=$1", [noteId])
+  ).rows[0];
+  assert.equal(preservedNote.voter_id, null);
+  assert.equal(preservedNote.voter_name, savedNote.voter_name);
+  assert.equal(preservedNote.body, savedNote.body);
   assert.equal(
     (await db.query("select public.remove_voters($1) n", [[ids.voter]])).rows[0]
       .n,
@@ -657,6 +870,15 @@ try {
     ).rows[0].n,
     2,
     "Deleting a batch preserves contact history",
+  );
+  assert.equal(
+    (
+      await db.query("select batch_id from public.voter_notes where id=$1", [
+        noteId,
+      ])
+    ).rows[0].batch_id,
+    null,
+    "Notes survive batch deletion",
   );
   await db.query("rollback to savepoint batch_deletion");
   await db.query("delete from public.batches where id=$1", [assigned]);

@@ -28,6 +28,8 @@ import {
   faLock,
   faBan,
   faBars,
+  faNoteSticky,
+  faBell,
 } from "@fortawesome/free-solid-svg-icons";
 const icons = {
   arrow: faArrowRight,
@@ -57,6 +59,8 @@ const icons = {
   lock: faLock,
   disable: faBan,
   menu: faBars,
+  notes: faNoteSticky,
+  unread: faBell,
 };
 export function Icon({
   name,

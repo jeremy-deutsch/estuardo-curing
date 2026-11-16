@@ -1,6 +1,7 @@
 import "server-only";
 import { connection } from "next/server";
 import { z } from "zod";
+import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { publicClient } from "./supabase/server";
 import type {
@@ -10,6 +11,8 @@ import type {
   ImportRow,
   ImportHistory,
   PublicBatch,
+  VoterNote,
+  NotesReadStatus,
 } from "./types";
 export const voterColumns =
   "id,first_name,last_name,street,unit,city,state,zip,phone,age,support_id,latitude,longitude,status,updated_at,created_at";
@@ -19,6 +22,7 @@ export async function allRows<T>(
   columns: string,
   order = "id",
   filter?: [string, string],
+  through?: [string, string],
 ) {
   const results: T[] = [];
   for (let offset = 0; ; offset += 1000) {
@@ -29,6 +33,7 @@ export async function allRows<T>(
       .range(offset, offset + 999);
     if (table === "batch_voters") query = query.order("batch_id");
     if (filter) query = query.eq(filter[0], filter[1]);
+    if (through) query = query.lte(through[0], through[1]);
     const { data, error } = await query;
     if (error) throw new Error(error.message);
     results.push(...(data as T[]));
@@ -36,7 +41,7 @@ export async function allRows<T>(
   }
 }
 export async function workspace(db: SupabaseClient) {
-  const [voters, batches, memberships] = await Promise.all([
+  const [voters, batches, memberships, notes] = await Promise.all([
     allRows<Voter>(db, "voters", voterColumns, "id"),
     allRows<Omit<Batch, "voter_ids">>(
       db,
@@ -49,9 +54,14 @@ export async function workspace(db: SupabaseClient) {
       "batch_id,voter_id",
       "voter_id",
     ),
+    allRows<{ voter_id: string | null }>(db, "voter_notes", "voter_id"),
   ]);
+  const votersWithNotes = new Set(notes.map((note) => note.voter_id));
   return {
-    voters,
+    voters: voters.map((voter) => ({
+      ...voter,
+      has_notes: votersWithNotes.has(voter.id),
+    })),
     batches: batches.map((b) => ({
       ...b,
       voter_ids: memberships
@@ -125,3 +135,30 @@ export async function publicBatch(token: string): Promise<PublicBatch | null> {
   if (error) throw new Error(error.message);
   return data as PublicBatch | null;
 }
+
+export async function voterNotes(
+  db: SupabaseClient,
+  viewedAt?: string,
+  voterId?: string,
+): Promise<VoterNote[]> {
+  const notes = await allRows<VoterNote>(
+    db,
+    "voter_notes",
+    "id,voter_id,batch_id,voter_name,voter_address,voter_phone,batch_name,author_name,body,created_at,voter:voters(status)",
+    "id",
+    voterId ? ["voter_id", voterId] : undefined,
+    viewedAt ? ["created_at", viewedAt] : undefined,
+  );
+  return notes.sort(
+    (a, b) =>
+      b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id),
+  );
+}
+
+export const notesReadStatus = cache(
+  async (db: SupabaseClient): Promise<NotesReadStatus> => {
+    const { data, error } = await db.rpc("notes_read_status");
+    if (error) throw new Error(error.message);
+    return data as NotesReadStatus;
+  },
+);

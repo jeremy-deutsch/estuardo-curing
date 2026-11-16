@@ -1,0 +1,105 @@
+.toolbar,
+.selectionBar {
+  flex-wrap: wrap;
+}
+.voterFilter {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 21px;
+  background: var(--soft-green);
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.voterFilter > a {
+  margin-left: auto;
+}
+.voterLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.selectionBar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 21px;
+  background: #f4f7ee;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--muted);
+}
+.selectionBar > span {
+  flex: 1;
+}
+.table {
+  min-width: 900px;
+}
+.table td {
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.table tbody tr[data-selected] {
+  background: #f4f7ee;
+}
+.table time {
+  display: block;
+  min-width: 130px;
+}
+.voter {
+  min-width: 190px;
+  max-width: 260px;
+}
+.voter .statusChip {
+  margin-top: 8px;
+}
+.body {
+  white-space: pre-wrap;
+  min-width: 260px;
+  max-width: 560px;
+  line-height: 1.6;
+}
+.checkbox {
+  display: inline-flex;
+  padding: 3px;
+  cursor: pointer;
+}
+.checkmark {
+  width: 16px;
+  height: 16px;
+  border: 1px solid #98a58f;
+  border-radius: 3px;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+}
+.checkbox[data-selected] .checkmark,
+.checkbox[data-indeterminate] .checkmark {
+  background: var(--green);
+  border-color: var(--green);
+}
+.checkbox[data-selected] .checkmark::after {
+  content: "✓";
+}
+.checkbox[data-indeterminate] .checkmark::after {
+  content: "−";
+}
+.checkbox[data-focus-visible] .checkmark {
+  outline: 2px solid #8da87f;
+  outline-offset: 3px;
+}
+.checkbox[data-disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+.announcement {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}

@@ -45,7 +45,7 @@ export interface Batch {
   voter_ids: string[];
 }
 export interface Workspace {
-  voters: Voter[];
+  voters: (Voter & { has_notes: boolean })[];
   batches: Batch[];
 }
 export interface ImportRow {
@@ -66,6 +66,24 @@ export interface PublicBatch {
   name: string;
   kind: BatchType;
   voters: Voter[];
+}
+export interface VoterNote {
+  id: string;
+  voter_id: string | null;
+  batch_id: string | null;
+  voter_name: string;
+  voter_address: string;
+  voter_phone: string;
+  voter: Pick<Voter, "status"> | null;
+  batch_name: string;
+  author_name: string;
+  body: string;
+  created_at: string;
+}
+export interface NotesReadStatus {
+  last_viewed_at: string | null;
+  checked_at: string;
+  has_unread: boolean;
 }
 export type ActionResult<T> =
   { ok: true; data: T } | { ok: false; error: string; code: number };

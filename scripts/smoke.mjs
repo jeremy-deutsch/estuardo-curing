@@ -15,6 +15,7 @@ console.log("Public signup explains approval: OK");
 for (const path of [
   "/voters",
   "/batches",
+  "/notes",
   "/uploads",
   "/staff",
   "/pending-approval",
@@ -42,6 +43,9 @@ console.log(
   "Confirmation callback rejects missing codes and external redirects: OK",
 );
 const endpoint = "/api/imports/00000000-0000-4000-8000-000000000000";
+const notesStatus = await fetch(base + "/api/notes/status");
+assert.equal(notesStatus.status, 401, "Unread Notes status requires staff");
+assert.equal(notesStatus.headers.get("cache-control"), "private, no-store");
 for (const method of ["GET", "POST"]) {
   const response = await fetch(base + endpoint, { method });
   assert.equal(

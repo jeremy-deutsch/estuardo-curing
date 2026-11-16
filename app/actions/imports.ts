@@ -26,6 +26,7 @@ export async function createImportAction(form: FormData) {
     });
     if (error) throw error;
     revalidatePath("/uploads");
+    revalidatePath("/notes");
     return { id: id as string };
   });
 }

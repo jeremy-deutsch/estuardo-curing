@@ -83,6 +83,19 @@
   background: #68834c;
   margin-left: auto;
 }
+.unreadNotes {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 21px;
+  height: 21px;
+  margin-left: auto;
+  border-radius: 50%;
+  color: #97671b;
+  background: #fff0cd;
+  font-size: 11px;
+}
 .sidebarBottom {
   margin-top: auto;
   padding-top: 35px;

@@ -69,6 +69,14 @@ If staff management reports `permission denied for table staff_members`, apply `
 - **`/batches`**: rename batches, copy links, inspect contents, and enable/disable public access. Select voters in the workspace to create a door-knocking or phone-calling batch, or add them to an existing active batch. Assignment is transactional and repeated assignment is harmless.
 - **`/batches/[id]`**: staff batch details and a link to the volunteer view. Staff can inspect disabled batches, but status changes require an active link.
 
+## Voter notes
+
+Apply `20261116195834_notes_last_viewed.sql` (also included in `pnpm db:migrate`) for unread tracking. Each staff member has a database-backed last Notes visit and read boundary, shared across devices. The Notes navigation link shows a bell when notes are unread; existing notes are unread until the staff member's first visit. Opening Notes clears the indicator for the displayed snapshot after the page mounts in a visible tab. Prefetches never mark notes read. Notes arriving after that snapshot stay unread, including when an older cached page is reopened. The indicator refreshes on navigation, returning to the tab, after recording a visit, and every 30 seconds while visible. Staff cannot update another member's visit timestamp.
+
+Apply `20261116180248_voter_notes.sql` (included in `pnpm db:migrate`) before using Notes. On an active batch's voter card, **Add note** opens a React Aria modal with required **Your name** and **Note** fields (120 and 5,000 characters). After a successful save, the name is stored in this browser's local storage and prefills the next note form, including across batches and reloads. When storage is unavailable, notes still save. Names are self-reported.
+
+The staff-only **`/notes`** page lists notes newest first with voter contact details, author, originating batch, and date. Search notes, select individual entries or all filtered results across pages, and export the selection as CSV. Selections remain when searching or changing pages; **Clear selection** clears all of them. CSV quoting preserves multiline notes and escapes spreadsheet formulas. Notes preserve the voter contact and batch details from submission, even if the voter or batch is later removed. Volunteers can submit notes using an active batch link without logging in, but only approved staff can read or export notes.
+
 ## Upload format and geocoding
 
 Use these template headers:
@@ -92,7 +100,7 @@ The optional `Support ID` (or `support_id`) column is imported for the Supporter
 
 Both batch types use **`/batch/[token]`**. Separate URL structures are unnecessary: the stored batch type controls the map and directions. Door-knocking batches include both. Phone-calling batches display the same contact cards without the map. Cards include call/text links when a phone number is available.
 
-A 256-bit random bearer token grants access to the voters in that active batch. Anyone holding the link can read those voters' names, addresses, phone numbers, and statuses, and change only their curing status. Volunteers do not log in. Share links only with assigned volunteers; disable a batch to revoke its public access. Re-enabling a batch restores the same link.
+A 256-bit random bearer token grants access to the voters in that active batch. Anyone holding the link can read those voters' names, addresses, phone numbers, and statuses, change their curing status, and leave notes for staff. Volunteers do not log in. Share links only with assigned volunteers; disable a batch to revoke its public access. Re-enabling a batch restores the same link.
 
 Statuses are shared across all batches for a voter. Selecting the current status clears it to no status. Updates are saved immediately, recorded in `status_events`, and use optimistic concurrency: if another volunteer already changed the voter, the later save is rejected with a refresh prompt. Use **Refresh** to load other volunteers' latest updates. Links do not identify individual volunteers, so the audit records the batch and status change, not a volunteer identity.
 

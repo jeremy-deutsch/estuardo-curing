@@ -16,6 +16,7 @@ import {
 } from "@/lib/types";
 import { Icon } from "./icon";
 import { VoterMap } from "./voter-map";
+import { NoteDialog } from "./note-dialog";
 export function PublicBatchView({
   token,
   batch,
@@ -184,6 +185,7 @@ export function PublicBatchView({
               <Icon name="search" />
               <input
                 aria-label="Search batch voters"
+                type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Find a voter or address…"
@@ -251,6 +253,15 @@ export function PublicBatchView({
                   </span>
                 </div>
                 <div className={styles.contactLinks}>
+                  <NoteDialog
+                    token={token}
+                    voter={v}
+                    disabled={readOnly}
+                    triggerClassName={styles.button}
+                    onSaved={() =>
+                      setMessage(`Note for ${fullName(v)} saved. Thank you.`)
+                    }
+                  />
                   {v.phone && (
                     <>
                       <a

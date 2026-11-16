@@ -17,6 +17,33 @@ type Story = StoryObj<typeof meta>;
 
 export const SplitView: Story = {};
 export const Empty: Story = { args: { data: emptyWorkspace } };
+export const VoterNotes: Story = {
+  args: {
+    data: {
+      ...workspace,
+      voters: workspace.voters.map((voter, index) => ({
+        ...voter,
+        has_notes: index === 0,
+      })),
+    },
+  },
+  play: async ({ canvas, userEvent }) => {
+    const link = canvas.getByRole("link", {
+      name: "View notes for Alex Rivera",
+    });
+    await expect(link).toHaveAttribute(
+      "href",
+      `/notes?voter=${workspace.voters[0].id}`,
+    );
+    await expect(
+      canvas.queryByRole("link", { name: "View notes for Morgan Patel" }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      canvas.getByRole("checkbox", { name: "Select Alex Rivera" }),
+    );
+    await expect(link).toBeVisible();
+  },
+};
 
 export const AgeFilter: Story = {
   args: {
@@ -62,9 +89,7 @@ export const AgeFilter: Story = {
       "Unknown age",
     ].entries()) {
       await userEvent.click(filter);
-      await userEvent.click(
-        screen.getByRole("option", { name: range }),
-      );
+      await userEvent.click(screen.getByRole("option", { name: range }));
       await userEvent.keyboard("{Escape}");
       await expect(
         canvas.getByLabelText("Map of 2 voter locations"),
@@ -80,9 +105,7 @@ export const AgeFilter: Story = {
         `Select Person ${index * 2 + 1} Example`,
       );
       await userEvent.click(filter);
-      await userEvent.click(
-        screen.getByRole("option", { name: range }),
-      );
+      await userEvent.click(screen.getByRole("option", { name: range }));
       await userEvent.keyboard("{Escape}");
     }
     await userEvent.click(filter);
@@ -109,9 +132,7 @@ export const AgeFilter: Story = {
     }
     await userEvent.click(filter);
     for (const range of ranges) {
-      await userEvent.click(
-        screen.getByRole("option", { name: range }),
-      );
+      await userEvent.click(screen.getByRole("option", { name: range }));
     }
     await userEvent.keyboard("{Escape}");
     await expect(filter).toHaveTextContent("All ages");

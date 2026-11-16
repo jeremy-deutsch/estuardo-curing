@@ -3,6 +3,7 @@ import type * as Auth from "../../app/actions/auth";
 import type * as Batches from "../../app/actions/batches";
 import type * as Imports from "../../app/actions/imports";
 import type * as Voters from "../../app/actions/voters";
+import type * as Notes from "../../app/actions/notes";
 import { completedReport, doorBatch, timestamp } from "../../stories/fixtures";
 
 // Type-only imports keep the real server modules and their dependencies out of Storybook.
@@ -26,8 +27,20 @@ export const setVoterStatusAction = fn<
 >().mockName("setVoterStatusAction");
 export const removeVotersAction =
   fn<typeof Voters.removeVotersAction>().mockName("removeVotersAction");
+export const addVoterNoteAction =
+  fn<typeof Notes.addVoterNoteAction>().mockName("addVoterNoteAction");
+export const markNotesViewedAction = fn<
+  typeof Notes.markNotesViewedAction
+>().mockName("markNotesViewedAction");
 
 export function resetActions() {
+  markNotesViewedAction.mockReset().mockImplementation(async (viewedAt) => ({
+    ok: true,
+    data: { viewed_at: viewedAt },
+  }));
+  addVoterNoteAction
+    .mockReset()
+    .mockResolvedValue({ ok: true, data: { id: "note-example" } });
   loginAction.mockReset().mockResolvedValue({
     error: "Unable to sign in. Check your email and password.",
   });

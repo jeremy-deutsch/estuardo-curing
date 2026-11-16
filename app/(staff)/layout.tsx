@@ -4,6 +4,7 @@ import { redirect, unstable_rethrow } from "next/navigation";
 import { staffSession, HttpError } from "@/lib/auth";
 import { StaffShell } from "@/components/staff-shell";
 import { isSuperAdmin } from "@/lib/super-admin";
+import { notesReadStatus } from "@/lib/data";
 async function Protected({ children }: { children: React.ReactNode }) {
   let session;
   try {
@@ -29,7 +30,9 @@ async function Protected({ children }: { children: React.ReactNode }) {
   }
   return (
     <StaffShell
+      key={session.user.id}
       email={session.user.email || "Staff"}
+      hasUnreadNotes={(await notesReadStatus(session.db)).has_unread}
       superAdmin={isSuperAdmin(session.user.id)}
     >
       {children}

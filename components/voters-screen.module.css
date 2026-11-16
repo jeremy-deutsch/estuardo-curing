@@ -279,6 +279,18 @@
   align-items: center;
   gap: 6px;
 }
+.notesLink {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  color: #71875d;
+  font-size: 12px;
+  border-radius: 3px;
+}
+.notesLink:hover {
+  color: var(--green);
+  background: var(--soft-green);
+}
 .supporterIcon {
   color: #a34235;
   flex-shrink: 0;
