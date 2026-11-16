@@ -58,7 +58,7 @@
 }
 .publicProgress small {
   font-size: 12px;
-  color: #9aab87;
+  color: #5f7450;
   display: block;
   margin-top: 6px;
 }
@@ -94,7 +94,7 @@
   gap: 10px;
   margin: 23px 0 30px;
   font-size: 13px;
-  color: #8a977b;
+  color: var(--muted);
 }
 .volunteerInstructions > svg {
   margin-top: 4px;
@@ -156,13 +156,13 @@
 }
 .cardPerson p {
   font-size: 13px;
-  color: #91a07e;
+  color: var(--muted);
   line-height: 1.7;
 }
 .cardPerson .cardPhone {
   font-size: 12px;
   margin-top: 8px;
-  color: #a3ad95;
+  color: var(--muted);
 }
 .statusActions {
   display: inline-flex;
@@ -230,8 +230,8 @@
   border: 1px solid #e5eadc;
   border-radius: 5px;
   padding: 8px 8px;
-  min-height: 31px;
-  color: #98a28c;
+  min-height: 40px;
+  color: #5f7056;
   display: flex;
   gap: 4px;
   align-items: center;
@@ -249,9 +249,9 @@
   color: #6c8b4f;
 }
 .statusOption.interested.chosen {
-  background: #f4effa;
-  color: #9175ac;
-  border-color: #d7c8e7;
+  background: #edf5fa;
+  color: #35647e;
+  border-color: #b8d1df;
 }
 .statusOption.no_response.chosen {
   background: #faf5e7;
@@ -338,6 +338,7 @@
   }
   .contactLinks .button {
     font-size: 13px;
+    min-height: 44px;
   }
 }
 @media (max-width: 700px) {
@@ -431,7 +432,7 @@
     font-size: 12px;
     padding: 8px 5px;
     gap: 4px;
-    min-height: 40px;
+    min-height: 44px;
     white-space: normal;
   }
   .saveAnnouncement {

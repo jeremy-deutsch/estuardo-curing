@@ -36,9 +36,9 @@
   flex-shrink: 0;
 }
 .batchTypeIcon.phone {
-  background: #f4f0f9;
-  color: #9c89b5;
-  border-color: #e9e1f2;
+  background: #edf5fa;
+  color: #35647e;
+  border-color: #d4e4ed;
 }
 .batchNameEdit {
   display: flex;

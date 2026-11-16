@@ -28,6 +28,13 @@ export const DoorKnocking: Story = {
 export const PhoneCalling: Story = {
   args: { token: phoneBatch.public_token, batch: publicContent(phoneBatch) },
 };
+export const NoteDialogOpen: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Add note for Alex Rivera" }),
+    );
+  },
+};
 export const Empty: Story = {
   args: { batch: { name: "New volunteer shift", kind: "phone", voters: [] } },
 };

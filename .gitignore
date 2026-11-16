@@ -4,6 +4,7 @@
 /node_modules
 /.pnpm-store/
 /.artifacts/
+/.taste-skill/
 /.pnp
 .pnp.*
 .yarn/*

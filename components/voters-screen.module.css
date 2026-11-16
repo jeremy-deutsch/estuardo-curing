@@ -8,7 +8,7 @@
   flex-wrap: wrap;
 }
 .stat {
-  padding: 18px 19px 17px;
+  padding: 20px;
   border: 1px solid var(--line);
   background: white;
   border-radius: var(--radius);
@@ -19,7 +19,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #7f8a7b;
+  color: var(--muted);
 }
 .stat > span > svg {
   font-size: 13px;
@@ -27,7 +27,7 @@
 }
 .stat > strong {
   display: block;
-  font-size: 31px;
+  font-size: 34px;
   letter-spacing: -1.2px;
   color: #304a39;
   font-weight: 500;
@@ -35,22 +35,22 @@
   line-height: 1;
 }
 .stat small {
-  color: #9aa18f;
+  color: var(--muted);
   font-size: 12px;
 }
 .stat.statCured {
-  background: #edf3e5;
-  border-color: #dce6d0;
+  background: #e8f0de;
+  border-color: #d4e1c8;
 }
 .stat.statCured > span {
-  color: #60784b;
+  color: #536c41;
 }
 .stat.statCured small {
-  color: #7d9566;
+  color: #536c41;
 }
 .statUnit {
   font-size: 15px;
-  color: #9cae89;
+  color: #536c41;
   letter-spacing: 0;
   margin-left: 4px;
 }
@@ -64,7 +64,7 @@
   background: #67879a;
 }
 .statDot.purple {
-  background: #a28bb9;
+  background: #59859d;
 }
 .voterWorkspace {
   background: white;
@@ -84,18 +84,26 @@
 .viewSwitch button {
   border: 0;
   background: transparent;
-  padding: 7px 9px;
+  padding: 8px 12px;
+  min-height: 38px;
   font-size: 13px;
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #929889;
+  color: var(--muted);
+  transition:
+    background 0.15s,
+    color 0.15s;
   border-radius: 4px;
 }
 .viewSwitch button.active {
   background: white;
   color: #4b6242;
   box-shadow: 0 1px 4px #26341a12;
+}
+.viewSwitch button:hover {
+  background: #eaf0e3;
+  color: var(--green);
 }
 .checkboxFilters {
   display: flex;
@@ -113,12 +121,12 @@
   justify-content: space-between;
   gap: 10px;
   width: 100%;
-  min-height: 36px;
+  min-height: 42px;
   padding: 8px 10px;
   border: 1px solid #e2e7dc;
   border-radius: 7px;
   background: white;
-  font-size: 13px;
+  font-size: 14px;
   white-space: nowrap;
 }
 .statusFilterButton[data-focus-visible] {
@@ -171,7 +179,7 @@
   gap: 7px;
   white-space: nowrap;
   font-size: 12px;
-  color: #7b8773;
+  color: #5b6e51;
   font-weight: 400;
 }
 .selectionBar {
@@ -196,7 +204,7 @@
 }
 .selectionBar > span {
   font-size: 13px;
-  color: #87917e;
+  color: var(--muted);
 }
 .selectionBar > span > strong {
   color: #45623c;
@@ -215,7 +223,7 @@
   border-radius: 3px;
   font-size: 11px;
   margin-right: 8px;
-  color: #a5b792;
+  color: #5a7148;
 }
 .selectionBar .button {
   font-size: 12px;
@@ -409,6 +417,26 @@
   }
 }
 @media (max-width: 700px) {
+  .filterBar .statusFilter {
+    flex: 1 1 100%;
+  }
+  .filterBar > select {
+    flex: 1 1 calc(50% - 8px);
+    min-height: 44px;
+  }
+  .filterBar .checkboxFilters {
+    flex-basis: 100%;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .statusFilterButton,
+  .statusFilterOption,
+  .checkboxFilter,
+  .viewSwitch button,
+  .selectionBar .button,
+  .selectionToggle {
+    min-height: 44px;
+  }
   .statusFilter {
     flex: 1;
   }
@@ -426,7 +454,7 @@
     font-size: 12px;
   }
   .stat small {
-    font-size: 10px;
+    font-size: 12px;
   }
   .stat > strong {
     font-size: 28px;
@@ -454,7 +482,7 @@
   }
   .selectionBar .button {
     font-size: 11px;
-    min-height: 28px;
+    min-height: 44px;
   }
   .viewSplit .mapPanel,
   .viewSplit .mapCanvas {

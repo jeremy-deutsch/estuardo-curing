@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
   Button,
   Dialog,
@@ -35,6 +35,7 @@ export function NoteDialog({
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const descriptionId = useId();
 
   function changeOpen(next: boolean) {
     if (busy) return;
@@ -93,9 +94,14 @@ export function NoteDialog({
         isKeyboardDismissDisabled={busy}
       >
         <Modal className={styles.modal}>
-          <Dialog className={styles.dialog}>
+          <Dialog className={styles.dialog} aria-describedby={descriptionId}>
             <div className={styles.heading}>
-              <Heading slot="title">Add a note</Heading>
+              <div className={styles.titleGroup}>
+                <span className={styles.titleIcon}>
+                  <Icon name="notes" />
+                </span>
+                <Heading slot="title">Add a note</Heading>
+              </div>
               <Button
                 className={ui.iconButton}
                 aria-label="Close note dialog"
@@ -105,9 +111,18 @@ export function NoteDialog({
                 <Icon name="close" />
               </Button>
             </div>
-            <p className={styles.description}>
-              For {fullName(voter)}. Notes are visible to campaign staff.
-            </p>
+            <div className={styles.voterContext}>
+              <span className={styles.voterAvatar} aria-hidden="true">
+                {voter.first_name?.[0]}
+                {voter.last_name?.[0]}
+              </span>
+              <div>
+                <strong>{fullName(voter)}</strong>
+                <p id={descriptionId} className={styles.description}>
+                  Notes are visible to campaign staff.
+                </p>
+              </div>
+            </div>
             <form action={submit} className={styles.form}>
               <label>
                 Your name
@@ -115,6 +130,7 @@ export function NoteDialog({
                   autoFocus
                   name="author_name"
                   autoComplete="name"
+                  placeholder="First and last name"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   maxLength={120}
@@ -141,6 +157,9 @@ export function NoteDialog({
                 </div>
               )}
               <div className={styles.actions}>
+                <span className={styles.privacyHint}>
+                  <Icon name="lock" /> Staff only
+                </span>
                 <Button
                   className={ui.button}
                   isDisabled={busy}

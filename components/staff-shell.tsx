@@ -25,6 +25,9 @@ export function StaffShell({
   });
   return (
     <div className={styles.appShell}>
+      <a className={styles.skipLink} href="#workspace-content">
+        Skip to content
+      </a>
       <aside className={styles.sidebar}>
         <div className={styles.workspaceLabel}>
           <span className={styles.workspaceAvatar}>BO</span>
@@ -46,6 +49,7 @@ export function StaffShell({
             <Link
               key={item.href}
               href={item.href}
+              aria-current={pathname.startsWith(item.href) ? "page" : undefined}
               className={`${styles.navItem} ${pathname.startsWith(item.href) ? styles.active : ""}`}
             >
               <Icon name={item.icon} />
@@ -62,6 +66,7 @@ export function StaffShell({
         {superAdmin && (
           <Link
             href="/staff"
+            aria-current={pathname.startsWith("/staff") ? "page" : undefined}
             className={`${styles.navItem} ${pathname.startsWith("/staff") ? styles.active : ""}`}
           >
             <Icon name="voters" />
@@ -124,7 +129,13 @@ export function StaffShell({
             workspace
           </span>
         </header>
-        <main className={styles.mainContent}>{children}</main>
+        <main
+          id="workspace-content"
+          tabIndex={-1}
+          className={styles.mainContent}
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

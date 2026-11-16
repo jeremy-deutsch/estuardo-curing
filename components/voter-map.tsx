@@ -9,7 +9,7 @@ import { fullName, statusLabels } from "@/lib/types";
 import { Icon } from "./icon";
 const colors: Record<string, string> = {
   uncontacted: "#45657a",
-  interested: "#8362bb",
+  interested: "#4c7f9b",
   cured: "#31836b",
   not_interested: "#929b9e",
   no_response: "#c29241",

@@ -99,8 +99,18 @@
   gap: 5px;
   align-items: center;
   font-size: 10px;
-  color: #869079;
+  color: #5f7056;
   white-space: nowrap;
+}
+@media (max-width: 700px) {
+  .mapCanvas :global(.leaflet-control-zoom a) {
+    width: 44px !important;
+    height: 44px !important;
+    line-height: 44px !important;
+  }
+  .mapCanvas :global(.leaflet-control-attribution a) {
+    color: #075a78;
+  }
 }
 .mapLegend i {
   width: 6px;
