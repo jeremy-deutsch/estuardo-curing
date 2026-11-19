@@ -221,6 +221,7 @@ export function PublicBatchView({
                   <span className={styles.cardNumber}>{index + 1}</span>
                   <div>
                     <h3>{fullName(v)}</h3>
+                    <p>Age: {v.age ?? "Unknown"}</p>
                     <p>
                       {v.street}
                       {v.unit && `, ${v.unit}`}

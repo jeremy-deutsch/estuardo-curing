@@ -70,6 +70,16 @@ try {
   await db.query(
     ageMigration.replace(/^begin;\s*/, "").replace(/commit;\s*$/, ""),
   );
+  const batchAgeMigration = await readFile(
+    new URL(
+      "../supabase/migrations/20261119163739_public_batch_voter_age.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  await db.query(
+    batchAgeMigration.replace(/^begin;\s*/, "").replace(/commit;\s*$/, ""),
+  );
   const statusMigration = await readFile(
     new URL(
       "../supabase/migrations/202611100001_do_not_cure_status.sql",
@@ -223,6 +233,18 @@ try {
   ).rows[0].b;
   assert.equal(batch.voters.length, 1);
   assert.equal(batch.voters[0].id, ids.voter);
+  assert.equal(batch.voters[0].age, null);
+  await db.query("savepoint public_batch_age");
+  await db.query("reset role");
+  await db.query("update public.voters set age = 42 where id = $1", [
+    ids.voter,
+  ]);
+  await db.query("set local role anon");
+  const batchWithAge = (
+    await db.query("select public.read_public_batch($1) as b", [token])
+  ).rows[0].b;
+  assert.equal(batchWithAge.voters[0].age, 42);
+  await db.query("rollback to savepoint public_batch_age");
   const initial = batch.voters[0].updated_at;
   await db.query("savepoint do_not_cure_status");
   const doNotCure = (

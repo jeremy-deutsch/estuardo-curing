@@ -100,7 +100,7 @@ The optional `Support ID` (or `support_id`) column is imported for the Supporter
 
 Both batch types use **`/batch/[token]`**. Separate URL structures are unnecessary: the stored batch type controls the map and directions. Door-knocking batches include both. Phone-calling batches display the same contact cards without the map. Cards include call/text links when a phone number is available.
 
-A 256-bit random bearer token grants access to the voters in that active batch. Anyone holding the link can read those voters' names, addresses, phone numbers, and statuses, change their curing status, and leave notes for staff. Volunteers do not log in. Share links only with assigned volunteers; disable a batch to revoke its public access. Re-enabling a batch restores the same link.
+A 256-bit random bearer token grants access to the voters in that active batch. Anyone holding the link can read those voters' names, ages, addresses, phone numbers, and statuses, change their curing status, and leave notes for staff. Volunteers do not log in. Share links only with assigned volunteers; disable a batch to revoke its public access. Re-enabling a batch restores the same link.
 
 Statuses are shared across all batches for a voter. Selecting the current status clears it to no status. Updates are saved immediately, recorded in `status_events`, and use optimistic concurrency: if another volunteer already changed the voter, the later save is rejected with a refresh prompt. Use **Refresh** to load other volunteers' latest updates. Links do not identify individual volunteers, so the audit records the batch and status change, not a volunteer identity.
 

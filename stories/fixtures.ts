@@ -56,6 +56,7 @@ export const voters: Voter[] = people.map((person, index) => ({
   zip: person[4],
   status: person[5],
   phone: person[6],
+  age: index === 0 ? 42 : null,
   latitude: 34.029 + index * 0.0012,
   longitude: -118.292 + index * 0.0018,
   created_at: timestamp,

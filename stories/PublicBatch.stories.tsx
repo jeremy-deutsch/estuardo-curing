@@ -20,6 +20,14 @@ type Story = StoryObj<typeof meta>;
 
 export const DoorKnocking: Story = {
   play: async ({ canvas }) => {
+    const alex = canvas.getByRole("heading", { name: "Alex Rivera" });
+    const jordan = canvas.getByRole("heading", { name: "Jordan Chen" });
+    await expect(
+      within(alex.closest("article")!).getByText("Age: 42"),
+    ).toBeVisible();
+    await expect(
+      within(jordan.closest("article")!).getByText("Age: Unknown"),
+    ).toBeVisible();
     await expect(
       canvas.queryByRole("button", { name: /Remove .* from this batch/ }),
     ).not.toBeInTheDocument();
