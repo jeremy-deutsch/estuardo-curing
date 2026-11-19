@@ -18,6 +18,10 @@
   margin: auto;
   padding: 38px 35px 50px;
 }
+.publicContent,
+.embeddedBatch {
+  container-type: inline-size;
+}
 .publicIntro {
   display: flex;
   justify-content: space-between;
@@ -112,89 +116,104 @@
 }
 .voterCards {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 17px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+@container (min-width: 55rem) {
+  .voterCards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .voterCard {
-  background: #fff;
-  border: 1px solid #e3e9db;
-  border-radius: 10px;
-  padding: 21px 20px;
+  display: flex;
+  flex-direction: column;
+  container-type: inline-size;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
   min-width: 0;
 }
 .voterCard.cardCured {
   border-color: #d2e2be;
   background: #fdfefb;
 }
-.cardPerson {
+.cardHeader {
   display: flex;
-  gap: 11px;
+  flex-wrap: wrap;
   align-items: flex-start;
-  position: relative;
+  gap: 8px 12px;
+}
+.cardIdentity {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1 1 8rem;
+  min-width: 0;
+}
+.cardIdentity > div {
+  min-width: 0;
+}
+.cardIdentity h3 {
+  font-size: 18px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.cardIdentity p,
+.cardDetails {
+  font-size: 13px;
+  color: var(--muted);
 }
 .cardNumber {
   border: 1px solid #e5ebdb;
   background: #f6f9f1;
   display: grid;
   place-items: center;
-  min-width: 25px;
-  height: 25px;
+  flex-shrink: 0;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 4px;
   font-size: 12px;
-  color: #a1b18c;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
   border-radius: 6px;
-  margin-top: 1px;
 }
-.cardPerson > div {
-  min-width: 0;
-  flex: 1;
-}
-.cardPerson h3 {
-  font-size: 16px;
-  font-weight: 500;
-  margin: 3px 0 9px;
+.cardDetails {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: 4px 16px;
+  margin-top: 12px;
   overflow-wrap: anywhere;
-}
-.cardPerson p {
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.7;
-}
-.cardPerson .cardPhone {
-  font-size: 12px;
-  margin-top: 8px;
-  color: var(--muted);
 }
 .statusActions {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  position: absolute;
-  top: -5px;
-  right: -6px;
+  gap: 4px;
+  margin-inline-start: auto;
+  max-width: 100%;
 }
 .statusActions .statusChip {
-  font-size: 10px;
-  max-width: 110px;
+  font-size: 12px;
+  line-height: 1.25;
+  padding: 4px 8px;
+  white-space: normal;
 }
-.cardPerson:has(> .statusActions) h3 {
-  padding-right: 60px;
-}
-.cardPerson:has(.removeVoter) h3 {
-  padding-right: 90px;
+.statusActions .statusChip > i {
+  flex-shrink: 0;
 }
 .removeVoter {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: 0;
   border-radius: 4px;
   background: transparent;
-  color: #91a07e;
-  font-size: 12px;
+  color: var(--muted);
+  font-size: 14px;
 }
 .removeVoter:hover:not(:disabled) {
   background: #fbefef;
@@ -207,38 +226,54 @@
 .contactLinks {
   display: flex;
   align-items: center;
-  gap: 7px;
-  margin: 18px 0 17px;
-  padding-left: 36px;
+  gap: 8px;
+  margin: 12px 0 16px;
   flex-wrap: wrap;
 }
 .contactLinks .button {
-  font-size: 12px;
-  color: #6a8151;
-  padding: 7px 9px;
-  min-height: 30px;
+  font-size: 13px;
+  color: var(--green);
+  min-height: 44px;
 }
 .statusControls {
-  border-top: 1px solid #ecf0e5;
-  padding-top: 15px;
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+@container (width < 26rem) {
+  .statusControls {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .statusOption {
+    grid-column: span 2;
+  }
+  .statusOption:nth-child(n + 4) {
+    grid-column: span 3;
+  }
 }
 .statusOption {
+  min-width: 0;
   font-size: 12px;
+  line-height: 1.25;
   border: 1px solid #e5eadc;
   border-radius: 5px;
-  padding: 8px 8px;
-  min-height: 40px;
+  padding: 6px 4px;
+  min-height: 44px;
   color: #5f7056;
   display: flex;
-  gap: 4px;
+  gap: 3px;
   align-items: center;
   background: #fff;
-  flex: 1;
   justify-content: center;
-  white-space: nowrap;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.statusOption > svg {
+  flex-shrink: 0;
+  font-size: 11px;
 }
 .statusOption:hover:not(:disabled) {
   background: #f5f8ef;
@@ -246,7 +281,7 @@
 .statusOption.chosen {
   border-color: #aebf98;
   background: #f1f6e9;
-  color: #6c8b4f;
+  color: #496f43;
 }
 .statusOption.interested.chosen {
   background: #edf5fa;
@@ -255,12 +290,12 @@
 }
 .statusOption.no_response.chosen {
   background: #faf5e7;
-  color: #ac9152;
+  color: #80601d;
   border-color: #e8dcb9;
 }
 .statusOption.not_interested.chosen {
   background: #f1f4f3;
-  color: #828e89;
+  color: #626e70;
   border-color: #d6dfda;
 }
 .statusOption.do_not_cure.chosen {
@@ -319,26 +354,6 @@
   .publicContent {
     padding-left: 25px;
     padding-right: 25px;
-  }
-  .voterCards {
-    grid-template-columns: 1fr;
-  }
-  .cardPerson > .statusActions {
-    position: static;
-  }
-  .statusActions .statusChip {
-    font-size: 11px;
-  }
-  .cardPerson h3 {
-    padding-right: 0 !important;
-  }
-  .statusOption {
-    font-size: 12px;
-    padding: 9px;
-  }
-  .contactLinks .button {
-    font-size: 13px;
-    min-height: 44px;
   }
 }
 @media (max-width: 700px) {
@@ -405,35 +420,7 @@
     min-height: 285px;
   }
   .voterCard {
-    padding: 18px 15px;
-  }
-  .cardPerson {
-    gap: 8px;
-  }
-  .cardPerson h3 {
-    font-size: 15px;
-  }
-  .statusActions .statusChip {
-    font-size: 10px;
-  }
-  .cardPerson .cardNumber {
-    min-width: 23px;
-    height: 23px;
-    font-size: 11px;
-  }
-  .contactLinks {
-    padding-left: 31px;
-  }
-  .statusControls {
-    justify-content: center;
-  }
-  .statusOption {
-    flex: 0 1 calc((100% - 10px) / 3);
-    font-size: 12px;
-    padding: 8px 5px;
-    gap: 4px;
-    min-height: 44px;
-    white-space: normal;
+    padding: 16px;
   }
   .saveAnnouncement {
     font-size: 11px;

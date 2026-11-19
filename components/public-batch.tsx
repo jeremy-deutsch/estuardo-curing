@@ -217,20 +217,13 @@ export function PublicBatchView({
                 className={`${styles.voterCard} ${v.status === "cured" ? styles.cardCured : ""}`}
                 key={v.id}
               >
-                <div className={styles.cardPerson}>
-                  <span className={styles.cardNumber}>{index + 1}</span>
-                  <div>
-                    <h3>{fullName(v)}</h3>
-                    <p>Age: {v.age ?? "Unknown"}</p>
-                    <p>
-                      {v.street}
-                      {v.unit && `, ${v.unit}`}
-                      <br />
-                      {v.city}, {v.state} {v.zip}
-                    </p>
-                    <p className={styles.cardPhone}>
-                      {v.phone || "No phone number on file"}
-                    </p>
+                <header className={styles.cardHeader}>
+                  <div className={styles.cardIdentity}>
+                    <span className={styles.cardNumber}>{index + 1}</span>
+                    <div>
+                      <h3>{fullName(v)}</h3>
+                      <p>Age: {v.age ?? "Unknown"}</p>
+                    </div>
                   </div>
                   <span className={styles.statusActions}>
                     <span
@@ -252,6 +245,15 @@ export function PublicBatchView({
                       </button>
                     )}
                   </span>
+                </header>
+                <div className={styles.cardDetails}>
+                  <p>
+                    {v.street}
+                    {v.unit && `, ${v.unit}`}
+                    <br />
+                    {v.city}, {v.state} {v.zip}
+                  </p>
+                  <p>{v.phone || "No phone number on file"}</p>
                 </div>
                 <div className={styles.contactLinks}>
                   <NoteDialog
