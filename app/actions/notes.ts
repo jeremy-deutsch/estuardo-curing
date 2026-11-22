@@ -48,6 +48,7 @@ export async function addVoterNoteAction(
       );
     revalidatePath("/notes");
     revalidatePath("/voters");
+    revalidatePath("/batches/[id]", "page");
     return { id: data as string };
   });
 }

@@ -18,17 +18,31 @@ const meta = {
   parameters: {
     nextjs: { navigation: { pathname: `/batches/${doorBatch.id}` } },
   },
-  args: { batch: doorBatch, content: publicContent(doorBatch) },
+  args: {
+    batch: doorBatch,
+    content: publicContent(doorBatch),
+    votersWithNotes: [voters[0].id, voters[2].id],
+  },
 } satisfies Meta<typeof BatchDetail>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const DoorKnocking: Story = {};
+export const DoorKnocking: Story = {
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.getByRole("link", { name: "View notes for Alex Rivera" }),
+    ).toHaveAttribute("href", `/notes?voter=${voters[0].id}`);
+    await expect(
+      canvas.queryByRole("link", { name: "View notes for Jordan Chen" }),
+    ).not.toBeInTheDocument();
+  },
+};
 export const PhoneCalling: Story = {
   args: { batch: phoneBatch, content: publicContent(phoneBatch) },
 };
 export const Disabled: Story = {
   args: { batch: disabledBatch, content: publicContent(disabledBatch) },
+  play: DoorKnocking.play,
 };
 
 export const RemoveVoter: Story = {

@@ -154,6 +154,11 @@
 .cardIdentity > div {
   min-width: 0;
 }
+.cardName {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .cardIdentity h3 {
   font-size: 18px;
   line-height: 1.3;

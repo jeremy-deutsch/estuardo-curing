@@ -13,9 +13,11 @@ import { DeleteBatchButton } from "./delete-batch-button";
 export function BatchDetail({
   batch,
   content,
+  votersWithNotes,
 }: {
   batch: Batch;
   content: PublicBatch;
+  votersWithNotes: string[];
 }) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
@@ -77,6 +79,7 @@ export function BatchDetail({
         batch={content}
         readOnly={!batch.active}
         embedded
+        votersWithNotes={votersWithNotes}
         removeVoterAction={removeVoterFromBatchAction.bind(null, batch.id)}
       />
     </>

@@ -17,17 +17,20 @@ import {
 import { Icon } from "./icon";
 import { VoterMap } from "./voter-map";
 import { NoteDialog } from "./note-dialog";
+import { VoterNotesLink } from "./voter-notes-link";
 export function PublicBatchView({
   token,
   batch,
   readOnly = false,
   embedded = false,
+  votersWithNotes,
   removeVoterAction,
 }: {
   token: string;
   batch: PublicBatch;
   readOnly?: boolean;
   embedded?: boolean;
+  votersWithNotes?: string[];
   removeVoterAction?: (voterId: string) => Promise<ActionResult<null>>;
 }) {
   const router = useRouter();
@@ -102,6 +105,7 @@ export function PublicBatchView({
         (!filter || (v.status || "uncontacted") === filter),
     ) || [];
   const cured = batch?.voters.filter((v) => v.status === "cured").length || 0;
+  const voterIdsWithNotes = new Set(votersWithNotes);
   return (
     <div className={embedded ? styles.embeddedBatch : styles.publicPage}>
       {!embedded && (
@@ -221,7 +225,12 @@ export function PublicBatchView({
                   <div className={styles.cardIdentity}>
                     <span className={styles.cardNumber}>{index + 1}</span>
                     <div>
-                      <h3>{fullName(v)}</h3>
+                      <div className={styles.cardName}>
+                        <h3>{fullName(v)}</h3>
+                        {embedded && voterIdsWithNotes.has(v.id) && (
+                          <VoterNotesLink voter={v} />
+                        )}
+                      </div>
                       <p>Age: {v.age ?? "Unknown"}</p>
                     </div>
                   </div>

@@ -7,7 +7,13 @@ async function Detail({ params }: { params: Promise<{ id: string }> }) {
   const { db } = await staffPageSession();
   const data = await staffBatch(db, (await params).id);
   if (!data) notFound();
-  return <BatchDetail batch={data.batch} content={data.content} />;
+  return (
+    <BatchDetail
+      batch={data.batch}
+      content={data.content}
+      votersWithNotes={data.votersWithNotes}
+    />
+  );
 }
 export default function BatchDetailPage(props: {
   params: Promise<{ id: string }>;

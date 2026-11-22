@@ -31,6 +31,9 @@ export const DoorKnocking: Story = {
     await expect(
       canvas.queryByRole("button", { name: /Remove .* from this batch/ }),
     ).not.toBeInTheDocument();
+    await expect(
+      canvas.queryByRole("link", { name: /^View notes for / }),
+    ).not.toBeInTheDocument();
   },
 };
 export const PhoneCalling: Story = {

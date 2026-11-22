@@ -15,6 +15,7 @@ import {
 import { removeVotersAction } from "@/app/actions/voters";
 import { VoterMap } from "./voter-map";
 import { Icon } from "./icon";
+import { VoterNotesLink } from "./voter-notes-link";
 import { BatchDialog } from "./batch-dialog";
 import {
   fullName,
@@ -579,16 +580,7 @@ export function VotersScreen({ data }: { data: Workspace }) {
                         <td>
                           <strong className={styles.voterName}>
                             {fullName(v)}
-                            {v.has_notes && (
-                              <Link
-                                href={`/notes?voter=${v.id}`}
-                                className={styles.notesLink}
-                                title="View voter notes"
-                                aria-label={`View notes for ${fullName(v)}`}
-                              >
-                                <Icon name="notes" />
-                              </Link>
-                            )}
+                            {v.has_notes && <VoterNotesLink voter={v} />}
                             {(v.support_id === "Strong Support" ||
                               v.support_id === "Lean Support") && (
                               <span title="Supporter">

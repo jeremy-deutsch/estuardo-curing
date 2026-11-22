@@ -21,8 +21,15 @@ export async function allRows<T>(
   table: string,
   columns: string,
   order = "id",
-  filter?: [string, string],
-  through?: [string, string],
+  {
+    filter,
+    through,
+    embeddedLimit,
+  }: {
+    filter?: [string, string];
+    through?: [string, string];
+    embeddedLimit?: { table: string; count: number };
+  } = {},
 ) {
   const results: T[] = [];
   for (let offset = 0; ; offset += 1000) {
@@ -34,6 +41,10 @@ export async function allRows<T>(
     if (table === "batch_voters") query = query.order("batch_id");
     if (filter) query = query.eq(filter[0], filter[1]);
     if (through) query = query.lte(through[0], through[1]);
+    if (embeddedLimit)
+      query = query.limit(embeddedLimit.count, {
+        referencedTable: embeddedLimit.table,
+      });
     const { data, error } = await query;
     if (error) throw new Error(error.message);
     results.push(...(data as T[]));
@@ -86,7 +97,7 @@ export async function importReport(
     "import_rows",
     "id,row_number,record,status,error",
     "row_number",
-    ["import_id", id],
+    { filter: ["import_id", id] },
   );
   return { ...data, rows };
 }
@@ -112,17 +123,27 @@ export async function staffBatch(db: SupabaseClient, id: string) {
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) return null;
-  const members = await allRows<{ voters: Voter }>(
+  const members = await allRows<{
+    voters: Voter & { voter_notes: { id: string }[] };
+  }>(
     db,
     "batch_voters",
-    `voters(${voterColumns})`,
+    `voters(${voterColumns},voter_notes(id))`,
     "voter_id",
-    ["batch_id", id],
+    {
+      filter: ["batch_id", id],
+      embeddedLimit: { table: "voters.voter_notes", count: 1 },
+    },
   );
-  const voters = members.map((member) => member.voters);
+  const votersWithNotes: string[] = [];
+  const voters = members.map(({ voters: { voter_notes, ...voter } }) => {
+    if (voter_notes.length) votersWithNotes.push(voter.id);
+    return voter;
+  });
   return {
     batch: { ...data, voter_ids: voters.map((v) => v.id) } as Batch,
     content: { name: data.name, kind: data.kind, voters } as PublicBatch,
+    votersWithNotes,
   };
 }
 
@@ -146,8 +167,10 @@ export async function voterNotes(
     "voter_notes",
     "id,voter_id,batch_id,voter_name,voter_address,voter_phone,batch_name,author_name,body,created_at,voter:voters(status)",
     "id",
-    voterId ? ["voter_id", voterId] : undefined,
-    viewedAt ? ["created_at", viewedAt] : undefined,
+    {
+      filter: voterId ? ["voter_id", voterId] : undefined,
+      through: viewedAt ? ["created_at", viewedAt] : undefined,
+    },
   );
   return notes.sort(
     (a, b) =>
